@@ -1,0 +1,141 @@
+/**
+ * MarkdownReaderLib — markdown-reader 前端工具庫（可嵌入式 library）
+ *
+ * 把「與伺服器溝通」「下載」「檔名/時間戳」等可重用邏輯抽成一支 library，
+ * index.html 只負責 DOM / zero-md 的呈現與事件繫結。
+ *
+ * 後端對應：
+ *   - 上傳： POST /api/upload?folder=markdown-reader   （form 欄位 myFiles，多檔）
+ *   - 列表： GET  /api/markdown-reader/files
+ *   - 清空： POST /api/markdown-reader/clear
+ *   - 靜態讀檔： /upload/markdown-reader/<name>
+ *
+ * 依賴：無（原生 fetch）。建議與 jQuery / Materialize / Lodash / zero-md 一起載入。
+ *
+ * Public API：
+ *   MarkdownReaderLib.FOLDER                  → 'markdown-reader'
+ *   MarkdownReaderLib.isReadable(name)        → boolean   是否為支援的 markdown / 文字副檔名
+ *   MarkdownReaderLib.uploadFile(file)        → Promise<resp>   上傳單一檔案
+ *   MarkdownReaderLib.listFiles()             → Promise<Array<{name,size,mtime}>>
+ *   MarkdownReaderLib.clearFolder()           → Promise<{ok,removed}>
+ *   MarkdownReaderLib.fetchText(name)         → Promise<string>  讀取檔案內容
+ *   MarkdownReaderLib.fileUrl(name)           → string   靜態檔案 URL
+ *   MarkdownReaderLib.timestamp(date)         → 'yyyyMMddHHmmss'
+ *   MarkdownReaderLib.downloadText(name,text) → 觸發瀏覽器下載
+ *   MarkdownReaderLib.formatSize(bytes)       → 'xx KB'
+ */
+(function (window) {
+  'use strict';
+
+  var FOLDER = 'markdown-reader';
+  var UPLOAD_API = '/api/upload?folder=' + FOLDER;
+  var FILES_API = '/api/markdown-reader/files';
+  var CLEAR_API = '/api/markdown-reader/clear';
+  var STATIC_BASE = '/upload/' + FOLDER + '/';
+
+  // 支援的副檔名（markdown 與常見純文字）
+  var READABLE_RE = /\.(md|markdown|mdown|mkd|mkdn|mdwn|mdtxt|text|txt)$/i;
+
+  function pad2(n) { return ('0' + n).slice(-2); }
+
+  // 加上 cache-busting query，確保每次都讀到伺服器最新內容
+  function bust(url) {
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
+  }
+
+  function fileUrl(name) {
+    return STATIC_BASE + encodeURIComponent(name);
+  }
+
+  var MarkdownReaderLib = {
+
+    FOLDER: FOLDER,
+
+    /** 是否為可閱讀的 markdown / 文字檔 */
+    isReadable: function (name) {
+      return READABLE_RE.test(String(name || ''));
+    },
+
+    /**
+     * 上傳單一檔案到 /upload/markdown-reader（同名覆寫）。
+     * 回傳伺服器 JSON；失敗時 reject。
+     */
+    uploadFile: function (file) {
+      var fd = new FormData();
+      fd.append('myFiles', file);
+      return fetch(UPLOAD_API, { method: 'POST', body: fd })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (resp) {
+          if (!resp || !resp.success) {
+            throw new Error((resp && resp.error) || '上傳失敗');
+          }
+          return resp;
+        });
+    },
+
+    /** 列出資料夾內檔案（依修改時間新→舊） */
+    listFiles: function () {
+      return fetch(bust(FILES_API), { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('列表載入失敗 (' + r.status + ')');
+          return r.json();
+        })
+        .then(function (d) { return (d && d.files) || []; });
+    },
+
+    /** 清空資料夾下所有可見檔案 */
+    clearFolder: function () {
+      return fetch(CLEAR_API, { method: 'POST' })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (d) {
+          if (!d || !d.ok) throw new Error((d && d.error) || '清空失敗');
+          return d;
+        });
+    },
+
+    /** 讀取單一檔案的文字內容 */
+    fetchText: function (name) {
+      return fetch(bust(fileUrl(name)), { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('讀取失敗 (' + r.status + ')');
+          return r.text();
+        });
+    },
+
+    fileUrl: fileUrl,
+
+    /** 本地時間 yyyyMMddHHmmss */
+    timestamp: function (date) {
+      var d = date || new Date();
+      return d.getFullYear() +
+        pad2(d.getMonth() + 1) +
+        pad2(d.getDate()) +
+        pad2(d.getHours()) +
+        pad2(d.getMinutes()) +
+        pad2(d.getSeconds());
+    },
+
+    /** 以 Blob 觸發瀏覽器下載文字內容 */
+    downloadText: function (name, text) {
+      var blob = new Blob([text == null ? '' : text], { type: 'text/markdown;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name || 'document.md';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    },
+
+    /** 人類可讀的檔案大小 */
+    formatSize: function (bytes) {
+      bytes = Number(bytes) || 0;
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+  };
+
+  window.MarkdownReaderLib = MarkdownReaderLib;
+})(window);

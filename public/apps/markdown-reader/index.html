@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Markdown Reader</title>
+
+  <!-- Materialize 1.0.0 + Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <!-- zero-md v3：匯入並自動註冊 <zero-md> -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/zero-md@3?register"></script>
+
+  <style>
+    /* ===== 主題變數（light / dark 由 <html data-theme> 切換） ===== */
+    :root,
+    [data-theme="dark"] {
+      --bg: #0f1115;
+      --surface: #161a22;
+      --surface-2: #1b2030;
+      --text: #e8eaf0;
+      --muted: #a8b0c0;
+      --border: rgba(255, 255, 255, 0.12);
+      --accent: #90caf9;
+      --card-bg: #0f1115;
+      --tool-bg: #1b2030;
+      --tool-fg: #e8eaf0;
+      --overlay: rgba(10, 14, 22, 0.84);
+      --drop-border: #3a4252;
+    }
+
+    [data-theme="light"] {
+      --bg: #f6f8fa;
+      --surface: #ffffff;
+      --surface-2: #eef1f5;
+      --text: #1f2328;
+      --muted: #57606a;
+      --border: rgba(0, 0, 0, 0.12);
+      --accent: #0969da;
+      --card-bg: #ffffff;
+      --tool-bg: #ffffff;
+      --tool-fg: #1f2328;
+      --overlay: rgba(240, 243, 247, 0.86);
+      --drop-border: #c4ccd6;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    body {
+      transition: background .2s ease, color .2s ease;
+    }
+
+    main {
+      padding: 18px 0 48px;
+    }
+
+    /* 無檔案時：把空狀態（初始畫面）置於視窗正中央 */
+    body.is-empty main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 0;
+      box-sizing: border-box;
+    }
+
+    body.is-empty .viewer-card {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      min-height: 0;
+      width: 100%;
+    }
+
+    .app-container {
+      width: 92%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .viewer-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      box-shadow: none;
+      min-height: 60vh;
+    }
+
+    /* ===== 空狀態 / 拖拉提示 ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 340px;
+      color: var(--muted);
+      border: 2px dashed var(--drop-border);
+      border-radius: 12px;
+      cursor: pointer;
+      padding: 32px;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+
+    .empty-state:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .empty-state .material-icons {
+      font-size: 64px;
+      margin-bottom: 8px;
+      opacity: .85;
+    }
+
+    .empty-state h5 {
+      margin: 6px 0;
+      font-weight: 600;
+    }
+
+    .empty-state .hint {
+      font-size: .9rem;
+      opacity: .8;
+      max-width: 460px;
+      line-height: 1.6;
+    }
+
+    .empty-state code {
+      background: var(--surface-2);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* 全頁拖拉覆蓋層 */
+    #drop-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: var(--overlay);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+    }
+
+    #drop-overlay.show {
+      display: flex;
+    }
+
+    #drop-overlay .drop-box {
+      border: 3px dashed var(--accent);
+      border-radius: 16px;
+      padding: 40px 64px;
+      text-align: center;
+      color: var(--text);
+      font-size: 1.2rem;
+    }
+
+    #drop-overlay .material-icons {
+      font-size: 72px;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ===== Sidenav（檔案清單） ===== */
+    .sidenav {
+      background: var(--surface) !important;
+      left: auto !important;
+      right: 0 !important;
+    }
+
+    /* 取消 Materialize 預設的 64px 行高/高度，改用自動高度 + 正常行距，
+       讓長標題折行時不再出現過大的列間距 */
+    .sidenav .subheader {
+      height: auto !important;
+      min-height: 0 !important;
+      line-height: 1.4 !important;
+      padding: 12px 20px !important;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--muted) !important;
+    }
+
+    .sidenav .subheader .material-icons {
+      margin-top: 1px;
+    }
+
+    .sidenav .subheader .path {
+      display: block;
+      font-size: .76rem;
+      opacity: .8;
+      word-break: break-all;
+    }
+
+    .sidenav li>a {
+      height: auto !important;
+      line-height: 1.4 !important;
+      padding: 11px 20px !important;
+      color: var(--text) !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidenav li>a .material-icons {
+      color: var(--muted) !important;
+      margin: 0;
+    }
+
+    .sidenav li.active {
+      background: rgba(127, 127, 127, 0.14) !important;
+    }
+
+    .sidenav li.active>a,
+    .sidenav li.active>a .material-icons {
+      color: var(--accent) !important;
+      font-weight: 600;
+    }
+
+    .sidenav .divider {
+      background-color: var(--border) !important;
+    }
+
+    .file-meta {
+      font-size: .72rem;
+      color: var(--muted) !important;
+      margin-left: auto;
+      padding-left: 8px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      opacity: .8;
+    }
+
+    /* Materialize toast 在列印時不要出現 */
+    @media print {
+      #toast-container { display: none !important; }
+      .viewer-card { border: none !important; padding: 0 !important; }
+      html, body { background: #fff !important; color: #000 !important; }
+      main { padding: 0 !important; }
+      .app-container { width: 100% !important; max-width: none !important; }
+    }
+  </style>
+
+  <!-- 動態列印設定（@page 方向 / 頁尾） -->
+  <style id="print-runtime-style"></style>
+
+  <link rel="stylesheet" href="./side-tool.css" />
+</head>
+
+<body class="is-empty">
+  <!-- 檔案清單側欄 -->
+  <ul id="slide-out" class="sidenav" style="width: 340px;">
+    <li>
+      <a class="subheader">
+        <i class="material-icons">folder_open</i>
+        <span>檔案清單<span class="path">/upload/markdown-reader</span></span>
+      </a>
+    </li>
+    <li>
+      <div class="divider"></div>
+    </li>
+    <div id="side-nav"></div>
+  </ul>
+
+  <main>
+    <div class="app-container">
+      <div class="viewer-card">
+        <!-- 空狀態：可點擊選檔，也接受全頁拖拉 -->
+        <div id="empty-state" class="empty-state">
+          <i class="material-icons">cloud_upload</i>
+          <h5>拖拉 Markdown 檔到頁面任意位置</h5>
+          <div class="hint">
+            檔案會上傳到 <code>/upload/markdown-reader</code>，同名直接覆寫；<br />
+            或<u>點此選擇檔案</u>。支援 <code>.md</code> / <code>.markdown</code> / <code>.txt</code> 等。
+          </div>
+        </div>
+
+        <!-- zero-md：no-auto，內容由 JS 注入後手動 render -->
+        <zero-md id="viewer" no-auto style="display:none;">
+          <script id="md-slot" type="text/markdown"></script>
+          <!-- template（取代預設樣式）：自帶 github-markdown + highlight.js 主題，方便 light/dark 切換 -->
+          <template>
+            <link rel="stylesheet" id="md-md-css"
+              href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.css" />
+            <link rel="stylesheet" id="md-hl-css"
+              href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" />
+            <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
+            <link rel="stylesheet" href="./viewer.css" />
+          </template>
+        </zero-md>
+      </div>
+    </div>
+  </main>
+
+  <!-- 全頁拖拉覆蓋層 -->
+  <div id="drop-overlay">
+    <div class="drop-box">
+      <i class="material-icons">file_download</i>
+      放開以上傳到 /upload/markdown-reader
+    </div>
+  </div>
+
+  <!-- 隱藏的檔案選擇器（點擊空狀態時觸發） -->
+  <input type="file" id="file-picker" multiple
+    accept=".md,.markdown,.mdown,.mkd,.mkdn,.mdwn,.text,.txt,text/markdown,text/plain"
+    style="display:none;" />
+
+  <!-- ===== 右側工具列 ===== -->
+  <div id="setting-menu" class="side-tool" title="檔案清單">
+    <i class="material-icons">menu</i>
+  </div>
+  <div id="setting-mode" class="side-tool" title="切換 light / dark">
+    <i class="material-icons">dark_mode</i>
+  </div>
+  <div id="setting-format" class="side-tool" title="文體格式化">
+    <i class="material-icons">auto_fix_high</i>
+  </div>
+  <div id="setting-orientation" class="side-tool" title="列印方向：直向 / 橫向">
+    <i class="material-icons">crop_portrait</i>
+  </div>
+  <div id="setting-print" class="side-tool" title="列印">
+    <i class="material-icons">print</i>
+  </div>
+  <div id="setting-download" class="side-tool" title="下載目前的 Markdown">
+    <i class="material-icons">download</i>
+  </div>
+  <div id="setting-clear-page" class="side-tool" title="清除頁面內容（不刪除檔案）">
+    <i class="material-icons">clear</i>
+  </div>
+  <div id="setting-clear" class="side-tool" title="清空 /upload/markdown-reader">
+    <i class="material-icons">delete_sweep</i>
+  </div>
+
+  <!-- 依賴：jQuery / Materialize / Lodash / MarkdownReaderLib -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <script src="./markdown-reader-lib.js"></script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var L = window.MarkdownReaderLib;
+
+      // 佛典文體格式化器（/lib/adp-col/mdFormater.js）：預設一律套用。
+      // 以動態 import() 載入（classic script 亦支援）；載不到就維持原文，不影響閱讀。
+      var formatMd = function (t) { return t; };
+      var formatterReady = import('/lib/adp-col/mdFormater.js')
+        .then(function (mod) {
+          var fmt = new mod.MdFormater();
+          formatMd = function (t) {
+            try { return fmt.format(t); }
+            catch (e) { console.error('MdFormater.format 失敗，改用原文：', e); return t; }
+          };
+        })
+        .catch(function (e) { console.warn('MdFormater 載入失敗，改用原文：', e); });
+
+      // zero-md 主題樣式表（light / dark）
+      var THEME = {
+        dark: {
+          md: 'https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.css',
+          hl: 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css'
+        },
+        light: {
+          md: 'https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css',
+          hl: 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css'
+        }
+      };
+      var THEME_KEY = 'markdown-reader-theme';
+      var FORMAT_KEY = 'markdown-reader-format';
+
+      var viewer = document.getElementById('viewer');
+      var mdSlot = document.getElementById('md-slot');
+      var sideNav = document.getElementById('side-nav');
+      var emptyState = document.getElementById('empty-state');
+      var dropOverlay = document.getElementById('drop-overlay');
+      var filePicker = document.getElementById('file-picker');
+
+      var state = {
+        theme: 'dark',
+        format: true,    // 佛典文體格式化開關（側邊 toggle）
+        orientation: 'portrait',
+        current: null,   // 目前開啟的檔名
+        text: '',        // 目前檔案原文
+        files: []
+      };
+
+      /* ---------- 主題（light / dark） ---------- */
+
+      function setZeroMdTheme(theme) {
+        // 同步 template（供下次 render 時 clone）
+        var tpl = viewer.querySelector('template');
+        if (tpl && tpl.content) {
+          var tmd = tpl.content.getElementById('md-md-css');
+          var thl = tpl.content.getElementById('md-hl-css');
+          if (tmd) tmd.href = THEME[theme].md;
+          if (thl) thl.href = THEME[theme].hl;
+        }
+        // 同步 live shadow root（即時生效，不需重新 render）
+        var sr = viewer.shadowRoot;
+        if (sr) {
+          var smd = sr.getElementById('md-md-css');
+          var shl = sr.getElementById('md-hl-css');
+          if (smd) smd.href = THEME[theme].md;
+          if (shl) shl.href = THEME[theme].hl;
+        }
+      }
+
+      function applyTheme(theme) {
+        state.theme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        setZeroMdTheme(theme);
+        var icon = document.querySelector('#setting-mode i');
+        if (icon) icon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
+        try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+      }
+
+      function toggleTheme() {
+        applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+      }
+
+      /* ---------- 文體格式化（MdFormater）開關 ---------- */
+
+      function updateFormatIcon() {
+        var el = document.getElementById('setting-format');
+        if (!el) return;
+        el.classList.toggle('active', state.format);
+        el.title = state.format
+          ? '文體格式化：開（點擊關閉，顯示原文）'
+          : '文體格式化：關（點擊開啟）';
+      }
+
+      function toggleFormat() {
+        state.format = !state.format;
+        try { localStorage.setItem(FORMAT_KEY, state.format ? '1' : '0'); } catch (e) {}
+        updateFormatIcon();
+        M.toast({ html: state.format ? '已開啟文體格式化' : '已關閉文體格式化（顯示原文）' });
+        if (state.current) renderCurrentContent();
+      }
+
+      /* ---------- 列印（方向 / 頁尾） ---------- */
+
+      function setPrintOptions() {
+        var styleEl = document.getElementById('print-runtime-style');
+        var name = (state.current || 'markdown').replace(/"/g, '\\"');
+        styleEl.textContent =
+          '@media print {' +
+          '  @page {' +
+          '    size: A4 ' + state.orientation + ';' +
+          '    margin: 14mm;' +
+          '    @bottom-left { content: "〔 ' + name + ' 〕"; font-size: 10pt; color: #666; }' +
+          '    @bottom-right { content: counter(page) " / " counter(pages); font-size: 10pt; color: #900; }' +
+          '  }' +
+          '}';
+      }
+
+      function toggleOrientation() {
+        state.orientation = state.orientation === 'portrait' ? 'landscape' : 'portrait';
+        var icon = document.querySelector('#setting-orientation i');
+        if (icon) icon.textContent = state.orientation === 'portrait' ? 'crop_portrait' : 'crop_landscape';
+        setPrintOptions();
+        M.toast({ html: '列印方向：' + (state.orientation === 'portrait' ? '直向' : '橫向') });
+      }
+
+      /* ---------- zero-md 渲染 ---------- */
+
+      function whenZeroMdReady(el) {
+        if (el && el.ready) return Promise.resolve();
+        return new Promise(function (resolve) {
+          customElements.whenDefined('zero-md').then(function () {
+            if (el.ready) return resolve();
+            el.addEventListener('zero-md-ready', function () { resolve(); }, { once: true });
+          });
+        });
+      }
+
+      function renderText(text) {
+        return whenZeroMdReady(viewer).then(function () {
+          setZeroMdTheme(state.theme);
+          // 相對路徑圖片以上傳資料夾為基準
+          viewer.setAttribute('marked-base-url', '/upload/' + L.FOLDER + '/');
+          mdSlot.textContent = text || '';
+          return viewer.render();
+        }).then(function () {
+          setZeroMdTheme(state.theme);
+        });
+      }
+
+      function showViewer(show) {
+        viewer.style.display = show ? '' : 'none';
+        emptyState.style.display = show ? 'none' : '';
+        document.body.classList.toggle('is-empty', !show);
+      }
+
+      // 依目前的格式化開關，重新渲染 state.text（原文）
+      function renderCurrentContent() {
+        if (state.format) {
+          return formatterReady.then(function () { return renderText(formatMd(state.text)); });
+        }
+        return renderText(state.text);
+      }
+
+      /* ---------- 開檔 / 檔案清單 ---------- */
+
+      function openFile(name) {
+        if (!name) return Promise.resolve();
+        state.current = name;
+        document.title = name + ' | Markdown Reader';
+        setPrintOptions();
+        markActive(name);
+        showViewer(true);
+        return renderText('# Loading…\n\n正在載入 **' + name + '**')
+          .then(function () { return L.fetchText(name); })
+          .then(function (text) {
+            state.text = text; // 保留原文（下載用原始檔，不含格式化）
+            return renderCurrentContent();
+          })
+          .catch(function (err) {
+            state.text = '';
+            return renderText('# 載入失敗\n\n- 檔案：`' + name + '`\n- 錯誤：`' + String(err) + '`');
+          });
+      }
+
+      function markActive(name) {
+        $('#side-nav li').removeClass('active');
+        $('#side-nav li[data-name="' + (window.CSS && CSS.escape ? CSS.escape(name) : name) + '"]').addClass('active');
+      }
+
+      function renderSideNav(files) {
+        if (!files.length) {
+          sideNav.innerHTML = '<li><a style="color:var(--muted)!important;">尚無檔案，拖拉上傳吧</a></li>';
+          return;
+        }
+        sideNav.innerHTML = files.map(function (f) {
+          return '<li data-name="' + _.escape(f.name) + '">' +
+            '<a href="#!" class="file-item" data-name="' + _.escape(f.name) + '">' +
+            '<i class="material-icons">description</i>' +
+            '<span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _.escape(f.name) + '</span>' +
+            '<span class="file-meta">' + L.formatSize(f.size) + '</span>' +
+            '</a></li>';
+        }).join('');
+      }
+
+      function refreshFiles(selectName) {
+        return L.listFiles().then(function (files) {
+          state.files = files;
+          renderSideNav(files);
+          if (!files.length) {
+            state.current = null;
+            state.text = '';
+            showViewer(false);
+            document.title = 'Markdown Reader';
+            return;
+          }
+          var has = function (n) { return files.some(function (f) { return f.name === n; }); };
+          var pick = (selectName && has(selectName)) ? selectName
+            : (state.current && has(state.current)) ? state.current
+              : files[0].name;
+          return openFile(pick);
+        }).catch(function (err) {
+          M.toast({ html: '讀取檔案清單失敗：' + err.message, classes: 'red' });
+        });
+      }
+
+      /* ---------- 上傳 ---------- */
+
+      function uploadFiles(fileList) {
+        var arr = Array.prototype.slice.call(fileList).filter(function (f) { return L.isReadable(f.name); });
+        if (!arr.length) {
+          M.toast({ html: '請拖入 markdown / 文字檔（.md / .txt …）', classes: 'orange' });
+          return;
+        }
+        var lastName = null;
+        var chain = Promise.resolve();
+        arr.forEach(function (file) {
+          chain = chain.then(function () {
+            return L.uploadFile(file).then(function () {
+              lastName = file.name;
+              M.toast({ html: '已上傳：' + file.name, classes: 'green' });
+            }).catch(function (err) {
+              M.toast({ html: '上傳失敗：' + file.name + '（' + err.message + '）', classes: 'red' });
+            });
+          });
+        });
+        chain.then(function () { return refreshFiles(lastName); });
+      }
+
+      /* ---------- 下載 / 清空 ---------- */
+
+      function downloadCurrent() {
+        if (!state.current) {
+          M.toast({ html: '目前沒有開啟的檔案', classes: 'orange' });
+          return;
+        }
+        var text = state.text != null ? state.text : '';
+        L.downloadText(state.current, text);
+        M.toast({ html: '已下載：' + state.current, classes: 'teal' });
+      }
+
+      // 清除頁面上目前顯示的內容（回到初始空狀態），但不刪除伺服器上的檔案
+      function clearPage() {
+        state.current = null;
+        state.text = '';
+        mdSlot.textContent = '';
+        $('#side-nav li').removeClass('active');
+        document.title = 'Markdown Reader';
+        showViewer(false);
+        M.toast({ html: '已清除頁面內容', classes: 'grey' });
+      }
+
+      function clearFolder() {
+        if (!confirm('確定要清空 /upload/markdown-reader 下的所有檔案嗎？此動作無法復原。')) return;
+        L.clearFolder().then(function (d) {
+          M.toast({ html: '已清空 ' + (d.removed || 0) + ' 個檔案', classes: 'teal' });
+          state.current = null;
+          return refreshFiles();
+        }).catch(function (err) {
+          M.toast({ html: '清空失敗：' + err.message, classes: 'red' });
+        });
+      }
+
+      /* ---------- 全頁拖拉 ---------- */
+
+      function hasFiles(e) {
+        var dt = e.dataTransfer;
+        if (!dt) return false;
+        if (dt.types) {
+          for (var i = 0; i < dt.types.length; i++) {
+            if (dt.types[i] === 'Files') return true;
+          }
+        }
+        return false;
+      }
+
+      function bindDragDrop() {
+        var depth = 0;
+        window.addEventListener('dragenter', function (e) {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          depth++;
+          dropOverlay.classList.add('show');
+        });
+        window.addEventListener('dragover', function (e) {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        });
+        window.addEventListener('dragleave', function (e) {
+          if (!hasFiles(e)) return;
+          depth--;
+          if (depth <= 0) { depth = 0; dropOverlay.classList.remove('show'); }
+        });
+        window.addEventListener('drop', function (e) {
+          e.preventDefault();
+          depth = 0;
+          dropOverlay.classList.remove('show');
+          var dt = e.dataTransfer;
+          if (dt && dt.files && dt.files.length) uploadFiles(dt.files);
+        });
+      }
+
+      /* ---------- 事件繫結 ---------- */
+
+      function bindEvents() {
+        // 側欄檔案點擊
+        $(document).on('click', '#side-nav a.file-item', function (e) {
+          e.preventDefault();
+          var name = $(this).data('name');
+          openFile(String(name));
+          var inst = M.Sidenav.getInstance(document.getElementById('slide-out'));
+          if (inst && inst.isOpen) inst.close();
+        });
+
+        // 空狀態 / 檔案選擇器
+        emptyState.addEventListener('click', function () { filePicker.click(); });
+        filePicker.addEventListener('change', function (e) {
+          if (e.target.files && e.target.files.length) uploadFiles(e.target.files);
+          filePicker.value = '';
+        });
+
+        // 右側工具列
+        document.getElementById('setting-menu').addEventListener('click', function () {
+          var inst = M.Sidenav.getInstance(document.getElementById('slide-out'));
+          if (inst) inst.open();
+        });
+        document.getElementById('setting-mode').addEventListener('click', toggleTheme);
+        document.getElementById('setting-format').addEventListener('click', toggleFormat);
+        document.getElementById('setting-orientation').addEventListener('click', toggleOrientation);
+        document.getElementById('setting-print').addEventListener('click', function () { window.print(); });
+        document.getElementById('setting-download').addEventListener('click', downloadCurrent);
+        document.getElementById('setting-clear-page').addEventListener('click', clearPage);
+        document.getElementById('setting-clear').addEventListener('click', clearFolder);
+
+        // 列印前後切換 zero-md 主題為淺色（列印一律白底黑字），列印後還原
+        window.addEventListener('beforeprint', function () { setZeroMdTheme('light'); });
+        window.addEventListener('afterprint', function () { setZeroMdTheme(state.theme); });
+      }
+
+      /* ---------- 初始化 ---------- */
+
+      document.addEventListener('DOMContentLoaded', function () {
+        M.Sidenav.init(document.querySelectorAll('.sidenav'), {
+          edge: 'right',
+          // 開啟 file-list 時隱藏 side tools；完全收起後再讓它們出現
+          onOpenStart: function () { document.body.classList.add('sidenav-open'); },
+          onCloseEnd: function () { document.body.classList.remove('sidenav-open'); }
+        });
+
+        var saved = 'dark';
+        try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
+        applyTheme(saved === 'light' ? 'light' : 'dark');
+
+        try { state.format = localStorage.getItem(FORMAT_KEY) !== '0'; } catch (e) { state.format = true; }
+        updateFormatIcon();
+
+        setPrintOptions();
+        bindEvents();
+        bindDragDrop();
+        refreshFiles();
+      });
+    })();
+  </script>
+</body>
+
+</html>

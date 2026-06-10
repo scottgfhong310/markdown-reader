@@ -1,0 +1,79 @@
+/* markdown-reader 右側浮動工具列
+ * 沿用 mdx/correction 的 .side-tool 概念，改為垂直一排圓形按鈕，
+ * 顏色以 CSS 變數驅動，可隨 light / dark 主題切換。
+ */
+
+:root {
+  --tool-top: 25vh;   /* 第一顆 icon 約位於頁高 1/4 處 */
+  --tool-size: 46px;  /* icon 直徑（即下方 width/height） */
+  --tool-gap: 9px;    /* icon 之間的間距 */
+  --tool-step: calc(var(--tool-size) + var(--tool-gap)); /* 相鄰 icon 的 top 位移 */
+}
+
+.side-tool {
+  position: fixed;
+  right: 16px;
+  width: var(--tool-size);
+  height: var(--tool-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1002;
+  color: var(--tool-fg);
+  background: var(--tool-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  transition: transform .1s ease, filter .15s ease, background .15s ease, color .15s ease, opacity .15s ease;
+  user-select: none;
+}
+
+/* 右側 file-list 開啟時，隱藏整排工具；收起後再淡入 */
+body.sidenav-open .side-tool {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.side-tool:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.side-tool:active {
+  transform: translateY(0);
+}
+
+.side-tool i.material-icons {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* 由上而下排列：第一顆在頁高 1/4，之後每顆間隔 --tool-gap（約 9px） */
+#setting-menu        { top: var(--tool-top); }
+#setting-mode        { top: calc(var(--tool-top) + 1 * var(--tool-step)); }
+#setting-format      { top: calc(var(--tool-top) + 2 * var(--tool-step)); }
+#setting-orientation { top: calc(var(--tool-top) + 3 * var(--tool-step)); }
+#setting-print       { top: calc(var(--tool-top) + 4 * var(--tool-step)); }
+#setting-download    { top: calc(var(--tool-top) + 5 * var(--tool-step)); }
+#setting-clear-page  { top: calc(var(--tool-top) + 6 * var(--tool-step)); }
+#setting-clear       { top: calc(var(--tool-top) + 7 * var(--tool-step)); }
+
+/* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
+.side-tool.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 清空鍵帶一點警示色 */
+#setting-clear:hover {
+  color: #ff6e6e;
+}
+
+/* 列印時隱藏所有工具 */
+@media print {
+  .side-tool,
+  #drop-overlay {
+    display: none !important;
+  }
+}

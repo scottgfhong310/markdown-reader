@@ -1,0 +1,77 @@
+/* viewer.css — zero-md 內容（shadow DOM）的自訂樣式
+ *
+ * 由 index.html 內 <zero-md> 的 <template> 以 <link> 載入，會被複製進 shadow root，
+ * 因此選擇器作用範圍僅限 viewer 內部：直接用 .markdown-body / :host / @media print，
+ * 不需外層前綴。請放在 github-markdown 與 highlight.js 兩個主題 <link> 之後，
+ * 才能維持「覆寫」的層疊順序。
+ */
+
+.markdown-body {
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 8px 4px;
+  font-size: 17px;
+  line-height: 1.7;
+  background: transparent;
+}
+
+.markdown-body pre {
+  border-radius: 10px;
+  padding: 1em;
+  overflow-x: auto;
+}
+
+.markdown-body :not(pre)>code {
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+
+.markdown-body img {
+  max-width: 100%;
+}
+
+/* ===== 列印：強制淺底深字、移除陰影 ===== */
+@media print {
+  :host {
+    display: block;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .markdown-body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+    padding: 0 !important;
+  }
+
+  .markdown-body pre,
+  .markdown-body code,
+  .markdown-body blockquote {
+    color: #000 !important;
+  }
+
+  .markdown-body a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  .markdown-body a[href]::after {
+    content: "" !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid-page;
+  }
+
+  p, blockquote, pre, table, ul, ol {
+    break-inside: avoid;
+  }
+
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+}
