@@ -62,4 +62,4 @@ Static read: `/upload/markdown-reader/<name>`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](./LICENSE) © 2026 Scott G.F. Hong

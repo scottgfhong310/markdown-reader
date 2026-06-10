@@ -60,6 +60,6 @@ markdown-reader/
 - 前端以**絕對路徑**呼叫 API（`/api/...`、`/upload/...`、`/lib/adp-col/mdFormater.js`），須由本專案的 Node 伺服器服務於**站台根目錄**。**不適用 GitHub Pages**（純靜態無法執行上傳 / 列表 / 清空 API）。
 - `MdFormater` 專為佛典文體設計（半形→全形標點、換行正規化等），套用在一般技術文件可能改動標點或影響表格 / 程式碼；用側邊 `auto_fix_high` toggle 可隨時關閉顯示原文，**下載永遠是原始檔**。
 
-## License / 授權
+## License
 
-[MIT](LICENSE)
+[MIT](./LICENSE) © 2026 Scott G.F. Hong
