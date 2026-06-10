@@ -48,6 +48,7 @@ public/upload/markdown-reader/    # 上傳檔案存放處（同名覆寫）
    |------|------|
    | `menu` | 開啟檔案清單側欄（開啟時其餘工具會隱藏，收起後再出現） |
    | `dark_mode` / `light_mode` | 切換頁面 light / dark（記憶於 localStorage） |
+   | `translate` | 切換介面語系：English → 繁體中文 → 日本語 循環（預設 English，記憶於 localStorage） |
    | `auto_fix_high` | 文體格式化開關（toggle，開啟時 accent 色；記憶於 localStorage） |
    | `crop_portrait` / `crop_landscape` | 切換列印方向（直向 / 橫向） |
    | `print` | 呼叫瀏覽器列印 |

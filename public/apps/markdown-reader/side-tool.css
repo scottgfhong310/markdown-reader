@@ -52,12 +52,13 @@ body.sidenav-open .side-tool {
 /* 由上而下排列：第一顆在頁高 1/4，之後每顆間隔 --tool-gap（約 9px） */
 #setting-menu        { top: var(--tool-top); }
 #setting-mode        { top: calc(var(--tool-top) + 1 * var(--tool-step)); }
-#setting-format      { top: calc(var(--tool-top) + 2 * var(--tool-step)); }
-#setting-orientation { top: calc(var(--tool-top) + 3 * var(--tool-step)); }
-#setting-print       { top: calc(var(--tool-top) + 4 * var(--tool-step)); }
-#setting-download    { top: calc(var(--tool-top) + 5 * var(--tool-step)); }
-#setting-clear-page  { top: calc(var(--tool-top) + 6 * var(--tool-step)); }
-#setting-clear       { top: calc(var(--tool-top) + 7 * var(--tool-step)); }
+#setting-lang        { top: calc(var(--tool-top) + 2 * var(--tool-step)); }
+#setting-format      { top: calc(var(--tool-top) + 3 * var(--tool-step)); }
+#setting-orientation { top: calc(var(--tool-top) + 4 * var(--tool-step)); }
+#setting-print       { top: calc(var(--tool-top) + 5 * var(--tool-step)); }
+#setting-download    { top: calc(var(--tool-top) + 6 * var(--tool-step)); }
+#setting-clear-page  { top: calc(var(--tool-top) + 7 * var(--tool-step)); }
+#setting-clear       { top: calc(var(--tool-top) + 8 * var(--tool-step)); }
 
 /* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
 .side-tool.active {
