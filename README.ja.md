@@ -20,7 +20,7 @@
 ```bash
 npm install
 npm start
-# http://localhost:3001/apps/markdown-reader/ を開く
+# http://localhost:3000/apps/markdown-reader/ を開く
 ```
 
 `PORT` でポートを変更：`PORT=8080 npm start`。
@@ -29,7 +29,7 @@ npm start
 
 ```
 markdown-reader/
-├── server.js                         # スタンドアロン Express サーバー（静的 + 2 API）
+├── app.js                            # スタンドアロン Express サーバー（静的 + 2 API）
 ├── package.json
 ├── routes/
 │   ├── upload.js                     # POST /api/upload?folder=markdown-reader（multer、複数、上書き）

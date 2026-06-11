@@ -7,7 +7,7 @@
  *   - 列表 / 清空 API：/api/markdown-reader（routes/markdown-reader.js）
  *
  * 啟動： npm install && npm start
- *        預設 http://localhost:3001/apps/markdown-reader/
+ *        預設 http://localhost:3000/apps/markdown-reader/
  */
 
 const express = require('express');
@@ -28,7 +28,7 @@ app.use('/api/markdown-reader', markdownReaderRouter);
 // 根路徑導向應用頁
 app.get('/', (req, res) => res.redirect('/apps/markdown-reader/'));
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`markdown-reader →  http://localhost:${PORT}/apps/markdown-reader/`);
 });

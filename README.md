@@ -20,7 +20,7 @@ Requires Node.js 18+.
 ```bash
 npm install
 npm start
-# open http://localhost:3001/apps/markdown-reader/
+# open http://localhost:3000/apps/markdown-reader/
 ```
 
 Set `PORT` to change the port: `PORT=8080 npm start`.
@@ -29,7 +29,7 @@ Set `PORT` to change the port: `PORT=8080 npm start`.
 
 ```
 markdown-reader/
-├── server.js                         # Standalone Express server (static + 2 APIs)
+├── app.js                            # Standalone Express server (static + 2 APIs)
 ├── package.json
 ├── routes/
 │   ├── upload.js                     # POST /api/upload?folder=markdown-reader (multer, multi-file, overwrite)

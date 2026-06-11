@@ -20,7 +20,7 @@
 ```bash
 npm install
 npm start
-# 開啟 http://localhost:3001/apps/markdown-reader/
+# 開啟 http://localhost:3000/apps/markdown-reader/
 ```
 
 可用環境變數 `PORT` 指定埠號：`PORT=8080 npm start`。
@@ -29,7 +29,7 @@ npm start
 
 ```
 markdown-reader/
-├── server.js                         # 獨立 Express 伺服器（靜態 + 兩支 API）
+├── app.js                            # 獨立 Express 伺服器（靜態 + 兩支 API）
 ├── package.json
 ├── routes/
 │   ├── upload.js                     # POST /api/upload?folder=markdown-reader（multer，多檔，同名覆寫）
