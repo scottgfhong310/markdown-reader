@@ -28,7 +28,7 @@
     <li>
       <a class="subheader">
         <i class="material-icons">folder_open</i>
-        <span><span id="side-header-label">Files</span><span class="path">/upload/markdown-reader</span></span>
+        <span><span id="side-header-label" data-i18n="side.header">Files</span><span class="path">/upload/markdown-reader</span></span>
       </a>
     </li>
     <li>
@@ -43,8 +43,8 @@
         <!-- 空狀態：可點擊選檔，也接受全頁拖拉 -->
         <div id="empty-state" class="empty-state">
           <i class="material-icons">cloud_upload</i>
-          <h5 id="empty-title">Drag a Markdown file anywhere on the page</h5>
-          <div class="hint" id="empty-hint">
+          <h5 id="empty-title" data-i18n="empty.title">Drag a Markdown file anywhere on the page</h5>
+          <div class="hint" id="empty-hint" data-i18n-html="empty.hint">
             Files are uploaded to <code>/upload/markdown-reader</code> (same name overwrites);<br />
             or <u>click to choose a file</u>. Supports <code>.md</code> / <code>.markdown</code> / <code>.txt</code>, etc.
           </div>
@@ -71,7 +71,7 @@
   <div id="drop-overlay">
     <div class="drop-box">
       <i class="material-icons">file_download</i>
-      <span id="drop-text">Release to upload to /upload/markdown-reader</span>
+      <span id="drop-text" data-i18n="drop.text">Release to upload to /upload/markdown-reader</span>
     </div>
   </div>
 
@@ -81,31 +81,31 @@
     style="display:none;" />
 
   <!-- ===== 右側工具列 ===== -->
-  <div id="setting-menu" class="side-tool" title="檔案清單">
+  <div id="setting-menu" class="side-tool" data-i18n-title="tool.menu" title="檔案清單">
     <i class="material-icons">menu</i>
   </div>
-  <div id="setting-mode" class="side-tool" title="切換 light / dark">
+  <div id="setting-mode" class="side-tool" data-i18n-title="tool.mode" title="切換 light / dark">
     <i class="material-icons">dark_mode</i>
   </div>
-  <div id="setting-lang" class="side-tool" title="Language">
+  <div id="setting-lang" class="side-tool" data-i18n-title="tool.lang" title="Language">
     <i class="material-icons">translate</i>
   </div>
   <div id="setting-format" class="side-tool" title="文體格式化">
     <i class="material-icons">auto_fix_high</i>
   </div>
-  <div id="setting-orientation" class="side-tool" title="列印方向：直向 / 橫向">
+  <div id="setting-orientation" class="side-tool" data-i18n-title="tool.orientation" title="列印方向：直向 / 橫向">
     <i class="material-icons">crop_portrait</i>
   </div>
-  <div id="setting-print" class="side-tool" title="列印">
+  <div id="setting-print" class="side-tool" data-i18n-title="tool.print" title="列印">
     <i class="material-icons">print</i>
   </div>
-  <div id="setting-download" class="side-tool" title="下載目前的 Markdown">
+  <div id="setting-download" class="side-tool" data-i18n-title="tool.download" title="下載目前的 Markdown">
     <i class="material-icons">download</i>
   </div>
-  <div id="setting-clear-page" class="side-tool" title="清除頁面內容（不刪除檔案）">
+  <div id="setting-clear-page" class="side-tool" data-i18n-title="tool.clearPage" title="清除頁面內容（不刪除檔案）">
     <i class="material-icons">clear</i>
   </div>
-  <div id="setting-clear" class="side-tool" title="清空 /upload/markdown-reader">
+  <div id="setting-clear" class="side-tool" data-i18n-title="tool.clear" title="清空 /upload/markdown-reader">
     <i class="material-icons">delete_sweep</i>
   </div>
 
@@ -114,6 +114,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
   <script src="./markdown-reader-lib.js"></script>
+
+  <!-- i18n 引擎 + 語言字典（先引擎再各語系；新增語言＝多一個 locale 檔） -->
+  <script src="./i18n.js"></script>
+  <script src="./locales/zh-Hant.js"></script>
+  <script src="./locales/en.js"></script>
+  <script src="./locales/ja.js"></script>
 
   <script src="./markdown-reader.js"></script>
 </body>

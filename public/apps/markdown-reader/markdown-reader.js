@@ -1,12 +1,13 @@
 /**
  * markdown-reader — 頁面控制器（glue）
  *
- * 從 index.html 內嵌 <script> 拉出：主題切換、i18n、文體格式化 toggle、
- * 列印、zero-md 渲染、開檔 / 清單 / 上傳 / 拖拉等 DOM 行為。
- * 與伺服器溝通、下載、檔名工具在 markdown-reader-lib.js。
+ * DOM 行為：主題切換、i18n（透過 I18n 引擎）、文體格式化 toggle、列印、
+ * zero-md 渲染、開檔 / 清單 / 上傳 / 拖拉。
+ * 與伺服器溝通、下載、檔名工具在 markdown-reader-lib.js；
+ * i18n 引擎在 i18n.js，語言字典在 locales/<code>.js。
  *
- * 依賴（皆於 index.html 先載入）：jQuery / Materialize / Lodash / zero-md / MarkdownReaderLib。
- * 註：內嵌的 I18N 字典暫隨控制器一併拉出；日後依 Guidelines §6 收斂為 i18n.js + locales/*.js。
+ * 依賴（皆於 index.html 先載入）：jQuery / Materialize / Lodash / zero-md /
+ * MarkdownReaderLib / I18n（+ locales）。
  */
 
 (function () {
@@ -40,124 +41,7 @@
   };
   var THEME_KEY = 'markdown-reader-theme';
   var FORMAT_KEY = 'markdown-reader-format';
-  var LANG_KEY = 'markdown-reader-lang';
-
-  // ===== i18n：英文為主，支援 en / zh-Hant / ja =====
-  var I18N = {
-    en: {
-      htmlLang: 'en',
-      titleSuffix: 'Markdown Reader',
-      langName: 'English',
-      emptyTitle: 'Drag a Markdown file anywhere on the page',
-      emptyHintHtml: 'Files are uploaded to <code>/upload/markdown-reader</code> (same name overwrites);<br />or <u>click to choose a file</u>. Supports <code>.md</code> / <code>.markdown</code> / <code>.txt</code>, etc.',
-      dropText: 'Release to upload to /upload/markdown-reader',
-      sideHeader: 'Files',
-      noFiles: 'No files yet — drag to upload',
-      tMenu: 'File list',
-      tMode: 'Toggle light / dark',
-      tLang: 'Language',
-      tFormatOn: 'Text formatting: on (click to show raw)',
-      tFormatOff: 'Text formatting: off (click to format)',
-      tOrientation: 'Print orientation: portrait / landscape',
-      tPrint: 'Print',
-      tDownload: 'Download current Markdown',
-      tClearPage: 'Clear page content (keeps files)',
-      tClear: 'Empty /upload/markdown-reader',
-      portrait: 'portrait',
-      landscape: 'landscape',
-      orientationToast: function (o) { return 'Print orientation: ' + o; },
-      formatOn: 'Text formatting enabled',
-      formatOff: 'Text formatting disabled (showing raw)',
-      uploaded: function (n) { return 'Uploaded: ' + n; },
-      uploadFail: function (n, m) { return 'Upload failed: ' + n + ' (' + m + ')'; },
-      notReadable: 'Please drop markdown / text files (.md / .txt …)',
-      downloaded: function (n) { return 'Downloaded: ' + n; },
-      noOpenFile: 'No file is currently open',
-      pageCleared: 'Page content cleared',
-      cleared: function (n) { return 'Cleared ' + n + ' file(s)'; },
-      clearFail: function (m) { return 'Clear failed: ' + m; },
-      confirmClear: 'Empty all files in /upload/markdown-reader? This cannot be undone.',
-      listFail: function (m) { return 'Failed to load file list: ' + m; },
-      loading: function (n) { return '# Loading…\n\nLoading **' + n + '**'; },
-      loadFail: function (n, e) { return '# Load failed\n\n- file: `' + n + '`\n- error: `' + e + '`'; }
-    },
-    'zh-Hant': {
-      htmlLang: 'zh-Hant',
-      titleSuffix: 'Markdown Reader',
-      langName: '繁體中文',
-      emptyTitle: '拖拉 Markdown 檔到頁面任意位置',
-      emptyHintHtml: '檔案會上傳到 <code>/upload/markdown-reader</code>，同名直接覆寫；<br />或<u>點此選擇檔案</u>。支援 <code>.md</code> / <code>.markdown</code> / <code>.txt</code> 等。',
-      dropText: '放開以上傳到 /upload/markdown-reader',
-      sideHeader: '檔案清單',
-      noFiles: '尚無檔案，拖拉上傳吧',
-      tMenu: '檔案清單',
-      tMode: '切換 light / dark',
-      tLang: '語言',
-      tFormatOn: '文體格式化：開（點擊關閉，顯示原文）',
-      tFormatOff: '文體格式化：關（點擊開啟）',
-      tOrientation: '列印方向：直向 / 橫向',
-      tPrint: '列印',
-      tDownload: '下載目前的 Markdown',
-      tClearPage: '清除頁面內容（不刪除檔案）',
-      tClear: '清空 /upload/markdown-reader',
-      portrait: '直向',
-      landscape: '橫向',
-      orientationToast: function (o) { return '列印方向：' + o; },
-      formatOn: '已開啟文體格式化',
-      formatOff: '已關閉文體格式化（顯示原文）',
-      uploaded: function (n) { return '已上傳：' + n; },
-      uploadFail: function (n, m) { return '上傳失敗：' + n + '（' + m + '）'; },
-      notReadable: '請拖入 markdown / 文字檔（.md / .txt …）',
-      downloaded: function (n) { return '已下載：' + n; },
-      noOpenFile: '目前沒有開啟的檔案',
-      pageCleared: '已清除頁面內容',
-      cleared: function (n) { return '已清空 ' + n + ' 個檔案'; },
-      clearFail: function (m) { return '清空失敗：' + m; },
-      confirmClear: '確定要清空 /upload/markdown-reader 下的所有檔案嗎？此動作無法復原。',
-      listFail: function (m) { return '讀取檔案清單失敗：' + m; },
-      loading: function (n) { return '# Loading…\n\n正在載入 **' + n + '**'; },
-      loadFail: function (n, e) { return '# 載入失敗\n\n- 檔案：`' + n + '`\n- 錯誤：`' + e + '`'; }
-    },
-    ja: {
-      htmlLang: 'ja',
-      titleSuffix: 'Markdown Reader',
-      langName: '日本語',
-      emptyTitle: 'Markdown ファイルをページにドラッグ',
-      emptyHintHtml: 'ファイルは <code>/upload/markdown-reader</code> にアップロードされます（同名は上書き）。<br /><u>クリックして選択</u>。<code>.md</code> / <code>.markdown</code> / <code>.txt</code> などに対応。',
-      dropText: 'ドロップして /upload/markdown-reader にアップロード',
-      sideHeader: 'ファイル一覧',
-      noFiles: 'ファイルがありません — ドラッグでアップロード',
-      tMenu: 'ファイル一覧',
-      tMode: 'ライト / ダーク切替',
-      tLang: '言語',
-      tFormatOn: '文体整形：オン（クリックで原文表示）',
-      tFormatOff: '文体整形：オフ（クリックで整形）',
-      tOrientation: '印刷方向：縦 / 横',
-      tPrint: '印刷',
-      tDownload: '現在の Markdown をダウンロード',
-      tClearPage: '表示をクリア（ファイルは保持）',
-      tClear: '/upload/markdown-reader を空にする',
-      portrait: '縦',
-      landscape: '横',
-      orientationToast: function (o) { return '印刷方向：' + o; },
-      formatOn: '文体整形を有効化',
-      formatOff: '文体整形を無効化（原文表示）',
-      uploaded: function (n) { return 'アップロード：' + n; },
-      uploadFail: function (n, m) { return 'アップロード失敗：' + n + '（' + m + '）'; },
-      notReadable: 'markdown / テキストファイルをドロップしてください（.md / .txt …）',
-      downloaded: function (n) { return 'ダウンロード：' + n; },
-      noOpenFile: '開いているファイルがありません',
-      pageCleared: '表示をクリアしました',
-      cleared: function (n) { return n + ' 件のファイルを削除しました'; },
-      clearFail: function (m) { return '消去に失敗：' + m; },
-      confirmClear: '/upload/markdown-reader 内のすべてのファイルを削除しますか？元に戻せません。',
-      listFail: function (m) { return 'ファイル一覧の取得に失敗：' + m; },
-      loading: function (n) { return '# Loading…\n\n**' + n + '** を読み込み中'; },
-      loadFail: function (n, e) { return '# 読み込み失敗\n\n- ファイル：`' + n + '`\n- エラー：`' + e + '`'; }
-    }
-  };
-  var LANG_ORDER = ['en', 'zh-Hant', 'ja'];
-  var dict = I18N.en;
+  // 語系由 I18n 引擎管理（localStorage 'lang'，預設 zh-Hant），不再自行保存。
 
   var viewer = document.getElementById('viewer');
   var mdSlot = document.getElementById('md-slot');
@@ -168,8 +52,7 @@
 
   var state = {
     theme: 'dark',
-    format: true,    // 佛典文體格式化開關（側邊 toggle）
-    lang: 'en',      // 介面語系（en / zh-Hant / ja，預設 en）
+    format: false,   // 佛典文體格式化開關（側邊 toggle）；預設關閉＝顯示原文
     orientation: 'portrait',
     current: null,   // 目前開啟的檔名
     text: '',        // 目前檔案原文
@@ -210,39 +93,24 @@
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
   }
 
-  /* ---------- 語系（i18n：en / zh-Hant / ja，預設 en） ---------- */
+  /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
 
-  function applyI18n() {
-    var d = dict, el;
-    document.documentElement.setAttribute('lang', d.htmlLang);
-    if ((el = document.getElementById('empty-title'))) el.textContent = d.emptyTitle;
-    if ((el = document.getElementById('empty-hint'))) el.innerHTML = d.emptyHintHtml;
-    if ((el = document.getElementById('drop-text'))) el.textContent = d.dropText;
-    if ((el = document.getElementById('side-header-label'))) el.textContent = d.sideHeader;
-    [['setting-menu', d.tMenu], ['setting-mode', d.tMode], ['setting-lang', d.tLang],
-     ['setting-orientation', d.tOrientation], ['setting-print', d.tPrint],
-     ['setting-download', d.tDownload], ['setting-clear-page', d.tClearPage],
-     ['setting-clear', d.tClear]].forEach(function (p) {
-      var e = document.getElementById(p[0]); if (e) e.title = p[1];
-    });
-    updateFormatIcon();
-    renderSideNav(state.files);
+  // 語言切換後，重繪由 JS 產生的動態內容（靜態文字 / 標題由 I18n.apply 處理）
+  function onLangChanged() {
+    updateFormatIcon();              // 格式化按鈕 title 依 state.format + 語系
+    renderSideNav(state.files);      // 「尚無檔案」訊息
     if (state.current) markActive(state.current);
-    document.title = state.current ? (state.current + ' | ' + d.titleSuffix) : d.titleSuffix;
+    document.title = state.current
+      ? (state.current + ' | ' + I18n.t('title.suffix'))
+      : I18n.t('title.suffix');
   }
 
-  function applyLang(lang) {
-    if (!I18N[lang]) lang = 'en';
-    state.lang = lang;
-    dict = I18N[lang];
-    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
-    applyI18n();
-  }
-
+  // 點 #setting-lang：依註冊順序循環切換；I18n.set 會 persist 並派發 i18n:changed
   function cycleLang() {
-    var i = LANG_ORDER.indexOf(state.lang);
-    applyLang(LANG_ORDER[(i + 1) % LANG_ORDER.length]);
-    M.toast({ html: dict.langName });
+    var langs = I18n.langs;
+    var i = langs.indexOf(I18n.lang);
+    I18n.set(langs[(i + 1) % langs.length]);
+    M.toast({ html: I18n.name(I18n.lang) });
   }
 
   /* ---------- 文體格式化（MdFormater）開關 ---------- */
@@ -251,14 +119,14 @@
     var el = document.getElementById('setting-format');
     if (!el) return;
     el.classList.toggle('active', state.format);
-    el.title = state.format ? dict.tFormatOn : dict.tFormatOff;
+    el.title = state.format ? I18n.t('tool.formatOn') : I18n.t('tool.formatOff');
   }
 
   function toggleFormat() {
     state.format = !state.format;
     try { localStorage.setItem(FORMAT_KEY, state.format ? '1' : '0'); } catch (e) {}
     updateFormatIcon();
-    M.toast({ html: state.format ? dict.formatOn : dict.formatOff });
+    M.toast({ html: state.format ? I18n.t('toast.formatOn') : I18n.t('toast.formatOff') });
     if (state.current) renderCurrentContent();
   }
 
@@ -283,7 +151,7 @@
     var icon = document.querySelector('#setting-orientation i');
     if (icon) icon.textContent = state.orientation === 'portrait' ? 'crop_portrait' : 'crop_landscape';
     setPrintOptions();
-    M.toast({ html: dict.orientationToast(state.orientation === 'portrait' ? dict.portrait : dict.landscape) });
+    M.toast({ html: I18n.t('toast.orientation', { o: I18n.t(state.orientation === 'portrait' ? 'orient.portrait' : 'orient.landscape') }) });
   }
 
   /* ---------- zero-md 渲染 ---------- */
@@ -329,11 +197,11 @@
   function openFile(name) {
     if (!name) return Promise.resolve();
     state.current = name;
-    document.title = name + ' | ' + dict.titleSuffix;
+    document.title = name + ' | ' + I18n.t('title.suffix');
     setPrintOptions();
     markActive(name);
     showViewer(true);
-    return renderText(dict.loading(name))
+    return renderText(I18n.t('md.loading', { n: name }))
       .then(function () { return L.fetchText(name); })
       .then(function (text) {
         state.text = text; // 保留原文（下載用原始檔，不含格式化）
@@ -341,7 +209,7 @@
       })
       .catch(function (err) {
         state.text = '';
-        return renderText(dict.loadFail(name, String(err)));
+        return renderText(I18n.t('md.loadFail', { n: name, e: String(err) }));
       });
   }
 
@@ -352,7 +220,7 @@
 
   function renderSideNav(files) {
     if (!files.length) {
-      sideNav.innerHTML = '<li><a style="color:var(--muted)!important;">' + dict.noFiles + '</a></li>';
+      sideNav.innerHTML = '<li><a style="color:var(--muted)!important;">' + I18n.t('side.noFiles') + '</a></li>';
       return;
     }
     sideNav.innerHTML = files.map(function (f) {
@@ -373,7 +241,7 @@
         state.current = null;
         state.text = '';
         showViewer(false);
-        document.title = dict.titleSuffix;
+        document.title = I18n.t('title.suffix');
         return;
       }
       var has = function (n) { return files.some(function (f) { return f.name === n; }); };
@@ -382,7 +250,7 @@
           : files[0].name;
       return openFile(pick);
     }).catch(function (err) {
-      M.toast({ html: dict.listFail(err.message), classes: 'red' });
+      M.toast({ html: I18n.t('toast.listFail', { m: err.message }), classes: 'red' });
     });
   }
 
@@ -391,7 +259,7 @@
   function uploadFiles(fileList) {
     var arr = Array.prototype.slice.call(fileList).filter(function (f) { return L.isReadable(f.name); });
     if (!arr.length) {
-      M.toast({ html: dict.notReadable, classes: 'orange' });
+      M.toast({ html: I18n.t('toast.notReadable'), classes: 'orange' });
       return;
     }
     var lastName = null;
@@ -400,9 +268,9 @@
       chain = chain.then(function () {
         return L.uploadFile(file).then(function () {
           lastName = file.name;
-          M.toast({ html: dict.uploaded(file.name), classes: 'green' });
+          M.toast({ html: I18n.t('toast.uploaded', { n: file.name }), classes: 'green' });
         }).catch(function (err) {
-          M.toast({ html: dict.uploadFail(file.name, err.message), classes: 'red' });
+          M.toast({ html: I18n.t('toast.uploadFail', { n: file.name, m: err.message }), classes: 'red' });
         });
       });
     });
@@ -413,12 +281,12 @@
 
   function downloadCurrent() {
     if (!state.current) {
-      M.toast({ html: dict.noOpenFile, classes: 'orange' });
+      M.toast({ html: I18n.t('toast.noOpenFile'), classes: 'orange' });
       return;
     }
     var text = state.text != null ? state.text : '';
     L.downloadText(state.current, text);
-    M.toast({ html: dict.downloaded(state.current), classes: 'teal' });
+    M.toast({ html: I18n.t('toast.downloaded', { n: state.current }), classes: 'teal' });
   }
 
   // 清除頁面上目前顯示的內容（回到初始空狀態），但不刪除伺服器上的檔案
@@ -427,19 +295,19 @@
     state.text = '';
     mdSlot.textContent = '';
     $('#side-nav li').removeClass('active');
-    document.title = 'Markdown Reader';
+    document.title = I18n.t('title.suffix');
     showViewer(false);
-    M.toast({ html: dict.pageCleared, classes: 'grey' });
+    M.toast({ html: I18n.t('toast.pageCleared'), classes: 'grey' });
   }
 
   function clearFolder() {
-    if (!confirm(dict.confirmClear)) return;
+    if (!confirm(I18n.t('confirm.clear'))) return;
     L.clearFolder().then(function (d) {
-      M.toast({ html: dict.cleared(d.removed || 0), classes: 'teal' });
+      M.toast({ html: I18n.t('toast.cleared', { n: d.removed || 0 }), classes: 'teal' });
       state.current = null;
       return refreshFiles();
     }).catch(function (err) {
-      M.toast({ html: dict.clearFail(err.message), classes: 'red' });
+      M.toast({ html: I18n.t('toast.clearFail', { m: err.message }), classes: 'red' });
     });
   }
 
@@ -535,11 +403,14 @@
     try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
     applyTheme(saved === 'light' ? 'light' : 'dark');
 
-    try { state.format = localStorage.getItem(FORMAT_KEY) !== '0'; } catch (e) { state.format = true; }
+    try { state.format = localStorage.getItem(FORMAT_KEY) === '1'; } catch (e) { state.format = false; }
 
-    var savedLang = 'en';
-    try { savedLang = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) {}
-    applyLang(savedLang);   // 設定 dict 並套用所有靜態文字 / 標題（含 updateFormatIcon）
+    // i18n：套用靜態文字 / 標題 + documentElement.lang（引擎自行解析初始語系：
+    // ?lang → localStorage('lang') → 瀏覽器語言 → zh-Hant）。
+    I18n.apply(document);
+    document.addEventListener('i18n:changed', onLangChanged);
+    updateFormatIcon();                     // 初始化格式化按鈕 title（i18n:changed 初次不觸發）
+    document.title = I18n.t('title.suffix');
 
     setPrintOptions();
     bindEvents();
