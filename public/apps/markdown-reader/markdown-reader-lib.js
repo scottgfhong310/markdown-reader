@@ -66,7 +66,7 @@
       return fetch(UPLOAD_API, { method: 'POST', body: fd })
         .then(function (r) { return r.json().catch(function () { return null; }); })
         .then(function (resp) {
-          if (!resp || !resp.success) {
+          if (!resp || !resp.ok) {
             throw new Error((resp && resp.error) || '上傳失敗');
           }
           return resp;

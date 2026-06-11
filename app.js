@@ -12,13 +12,15 @@
 
 const express = require('express');
 const path = require('path');
+const logger = require('morgan');
 
 const uploadRouter = require('./routes/upload');
 const markdownReaderRouter = require('./routes/markdown-reader');
 
 const app = express();
 
-app.use(express.json());
+app.use(logger('dev'));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -27,6 +29,12 @@ app.use('/api/markdown-reader', markdownReaderRouter);
 
 // 根路徑導向應用頁
 app.get('/', (req, res) => res.redirect('/apps/markdown-reader/'));
+
+// 404（API 回 JSON，其餘回純文字）
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ ok: false, error: 'Not found' });
+  res.status(404).type('text/plain').send('Not found');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

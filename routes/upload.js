@@ -96,12 +96,12 @@ router.post('/', function (req, res) {
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(500).json({
-        success: false,
+        ok: false,
         error: 'Multer error: ' + err.message
       });
     } else if (err) {
       return res.status(500).json({
-        success: false,
+        ok: false,
         error: 'File upload error: ' + err.message
       });
     }
@@ -131,7 +131,7 @@ router.post('/', function (req, res) {
       };
     });
     res.json({
-      success: true,
+      ok: true,
       uploadDate,
       files,
       uploadHistory
@@ -164,7 +164,7 @@ router.get('/history', function (req, res) {
     res.send(renderHistoryTbody(uploadHistory));
   } else {
     res.json({
-      success: true,
+      ok: true,
       uploadHistory
     });
   }
@@ -175,12 +175,12 @@ router.post('/delete', async function (req, res) {
     filename
   } = req.body;
   if (!filename) return res.status(400).json({
-    success: false,
+    ok: false,
     error: 'No filename provided'
   });
   const idx = uploadHistory.findIndex(item => item.filename === filename);
   if (idx === -1) return res.status(404).json({
-    success: false,
+    ok: false,
     error: 'File not found in history'
   });
   try {
@@ -194,7 +194,7 @@ router.post('/delete', async function (req, res) {
       res.send(renderHistoryTbody(uploadHistory));
     } else {
       return res.json({
-        success: true,
+        ok: true,
         uploadHistory
       });
     }
@@ -203,7 +203,7 @@ router.post('/delete', async function (req, res) {
       res.send(renderHistoryTbody(uploadHistory));
     } else {
       return res.status(500).json({
-        success: false,
+        ok: false,
         error: e.message
       });
     }
