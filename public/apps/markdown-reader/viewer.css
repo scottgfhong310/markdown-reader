@@ -47,6 +47,11 @@
     padding: 0 !important;
   }
 
+  /* 底色一律白：所有子元素去底（程式碼 / 表頭 / 斑馬列 / highlight.js 皆轉白） */
+  .markdown-body * {
+    background: transparent !important;
+  }
+
   .markdown-body pre,
   .markdown-body code,
   .markdown-body blockquote {

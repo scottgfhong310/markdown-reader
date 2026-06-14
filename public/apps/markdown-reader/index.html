@@ -61,6 +61,8 @@
               href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" />
             <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
             <link rel="stylesheet" href="./viewer.css" />
+            <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
+            <link rel="stylesheet" id="md-skin-css" media="not all" />
           </template>
         </zero-md>
       </div>
@@ -89,6 +91,9 @@
   </div>
   <div id="setting-lang" class="side-tool" data-i18n-title="tool.lang" title="Language">
     <i class="material-icons">translate</i>
+  </div>
+  <div id="setting-style" class="side-tool" data-i18n-title="tool.style" title="閱讀風格：GitHub / 報紙">
+    <i class="material-icons">newspaper</i>
   </div>
   <div id="setting-format" class="side-tool" title="文體格式化">
     <i class="material-icons">auto_fix_high</i>

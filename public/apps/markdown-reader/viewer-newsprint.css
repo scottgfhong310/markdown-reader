@@ -1,0 +1,186 @@
+/* viewer-newsprint.css — 「報紙 / newsprint」閱讀風皮膚（zero-md shadow DOM）
+ *
+ * 由 index.html 內 <zero-md> 的 <template> 以 id="md-skin-css" 的 <link> 載入，
+ * 載入序在 github-markdown-css → highlight.js → viewer.css **之後**，作為最後一層覆寫。
+ * 因此 github-markdown 仍當結構底（涵蓋所有 GFM 元素），本檔只把字體換襯線、配色換紙感。
+ *
+ * 由 Typora 的 newsprint 主題（作者 typora.io / PT Serif）萃取改寫：
+ *   - #write → .markdown-body；丟掉全部 Typora 編輯器外殼與 meyer reset。
+ *   - 明暗以 host 屬性切換：JS 在 <zero-md> 上設 data-mode="light|dark"（= app 主題），
+ *     :host 與 :host([data-mode="dark"]) 各帶一組 token；dark 為衍生的「暖調紙夜」。
+ *   - 字型來自 newsprint-fonts.css（PT Serif 自託管 + Noto Serif TC/JP），JS 懶載入主文件。
+ */
+
+:host {
+  /* 紙感淺色（newsprint 原色） */
+  --np-serif: 'PT Serif', 'Noto Serif TC', 'Noto Serif JP', Georgia, 'Times New Roman', 'Songti TC', 'Hiragino Mincho ProN', serif;
+  --np-bg: #f3f2ee;
+  --np-text: #1f0909;
+  --np-muted: #6a6256;
+  --np-link: #065588;
+  --np-rule: #c5c5c5;
+  --np-quote-bd: #bababa;
+  --np-quote-fg: #656565;
+  --np-code-bg: #e7e5dd;
+  --np-thead-bg: #e6e4dc;
+  --np-row-alt: #eceae3;
+  --np-sel-bg: rgba(32, 43, 51, .63);
+  --np-sel-fg: #fff;
+
+  display: block;
+  background: var(--np-bg);
+}
+
+:host([data-mode="dark"]) {
+  /* 衍生的暖調「紙夜」 */
+  --np-bg: #1b1813;
+  --np-text: #e9e3d6;
+  --np-muted: #9a9484;
+  --np-link: #8fb7d6;
+  --np-rule: rgba(233, 227, 214, .22);
+  --np-quote-bd: rgba(233, 227, 214, .30);
+  --np-quote-fg: #b6ae9d;
+  --np-code-bg: #26221b;
+  --np-thead-bg: #272219;
+  --np-row-alt: #211d16;
+  --np-sel-bg: #4a5a66;
+  --np-sel-fg: #fff;
+}
+
+/* ===== 內文基底 ===== */
+.markdown-body {
+  background: var(--np-bg);
+  color: var(--np-text);
+  font-family: var(--np-serif);
+  font-size: 18px;
+  line-height: 1.7;
+  padding: 1.6rem clamp(1rem, 5%, 3rem);
+}
+
+.markdown-body ::selection {
+  background: var(--np-sel-bg);
+  color: var(--np-sel-fg);
+}
+
+/* ===== 標題（襯線、newsprint 性格：h1/h3 不加粗、h1 帶底線） ===== */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-family: var(--np-serif);
+  color: var(--np-text);
+}
+
+.markdown-body h1 {
+  font-weight: 400;
+  line-height: 1.3;
+  border-bottom: 1px solid var(--np-rule);
+  padding-bottom: .3em;
+}
+
+.markdown-body h2 {
+  font-weight: 700;
+  border-bottom: 1px solid var(--np-rule);
+  padding-bottom: .25em;
+}
+
+.markdown-body h3 {
+  font-weight: 400;
+}
+
+/* ===== 連結 ===== */
+.markdown-body a {
+  color: var(--np-link);
+  text-decoration: none;
+}
+
+.markdown-body a:hover,
+.markdown-body a:active {
+  text-decoration: underline;
+}
+
+/* ===== 引言（斜體、左線） ===== */
+.markdown-body blockquote {
+  color: var(--np-quote-fg);
+  border-left: .25em solid var(--np-quote-bd);
+  font-style: italic;
+}
+
+.markdown-body blockquote code,
+.markdown-body blockquote pre {
+  font-style: normal;
+}
+
+/* ===== 清單：巢狀換成 alpha / roman（newsprint 慣例） ===== */
+.markdown-body ol ol > li { list-style-type: lower-alpha; }
+.markdown-body ol ol ol > li { list-style-type: lower-roman; }
+
+/* ===== 行內碼 / 程式碼區塊（紙感底；token 色仍交給 highlight.js） ===== */
+.markdown-body code,
+.markdown-body tt {
+  background: var(--np-code-bg);
+  color: inherit;
+  border-radius: 4px;
+}
+
+.markdown-body pre {
+  background: var(--np-code-bg);
+  border-radius: 10px;
+}
+
+.markdown-body pre code,
+.markdown-body pre .hljs,
+.markdown-body pre > code.hljs {
+  background: transparent;
+}
+
+/* ===== 表格：thead 反白小標、偶數列淡底 ===== */
+.markdown-body table th,
+.markdown-body table td {
+  border-color: var(--np-rule);
+}
+
+.markdown-body thead th {
+  background: var(--np-thead-bg);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.markdown-body table tr {
+  background: var(--np-bg);
+  border-top-color: var(--np-rule);
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background: var(--np-row-alt);
+}
+
+/* ===== 分隔線 / 圖片 ===== */
+.markdown-body hr {
+  height: 1px;
+  background: var(--np-rule);
+  border: 0;
+}
+
+.markdown-body img {
+  background: var(--np-bg);
+  max-width: 100%;
+}
+
+/* ===== 列印：永遠是紙本淺色（白底黑字、襯線保留） ===== */
+@media print {
+  :host {
+    --np-bg: #fff;
+    --np-text: #000;
+    --np-code-bg: #fff;
+    --np-thead-bg: #fff;
+    --np-row-alt: #fff;
+  }
+
+  .markdown-body {
+    padding: 0 !important;
+    font-size: 12pt;
+  }
+}

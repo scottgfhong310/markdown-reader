@@ -238,7 +238,8 @@ body.is-empty .viewer-card {
 @media print {
   #toast-container { display: none !important; }
   .viewer-card { border: none !important; padding: 0 !important; }
-  html, body { background: #fff !important; color: #000 !important; }
+  /* 列印：外層底色一律白（無論目前 light/dark 主題） */
+  html, body, main, .app-container, .viewer-card { background: #fff !important; color: #000 !important; }
   main { padding: 0 !important; }
   .app-container { width: 100% !important; max-width: none !important; }
 }

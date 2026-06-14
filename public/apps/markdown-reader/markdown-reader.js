@@ -41,6 +41,7 @@
   };
   var THEME_KEY = 'markdown-reader-theme';
   var FORMAT_KEY = 'markdown-reader-format';
+  var STYLE_KEY = 'markdown-reader-style';   // 閱讀風格：'github' | 'newsprint'
   // 語系由 I18n 引擎管理（localStorage 'lang'，預設 zh-Hant），不再自行保存。
 
   var viewer = document.getElementById('viewer');
@@ -52,6 +53,7 @@
 
   var state = {
     theme: 'dark',
+    style: 'github', // 閱讀風格：'github'（預設）| 'newsprint'（報紙襯線紙感）
     format: false,   // 佛典文體格式化開關（側邊 toggle）；預設關閉＝顯示原文
     orientation: 'portrait',
     current: null,   // 目前開啟的檔名
@@ -83,6 +85,8 @@
   function applyTheme(theme) {
     state.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
+    // host 屬性：供 newsprint 皮膚（shadow DOM 內 :host([data-mode]))跟著 light/dark 切換
+    viewer.setAttribute('data-mode', theme);
     setZeroMdTheme(theme);
     var icon = document.querySelector('#setting-mode i');
     if (icon) icon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
@@ -91,6 +95,54 @@
 
   function toggleTheme() {
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+  }
+
+  /* ---------- 閱讀風格（github / newsprint） ---------- */
+
+  // newsprint 字型（PT Serif 自託管 + Noto Serif TC/JP）首次切到 newsprint 才注入主文件
+  var newsprintFontsInjected = false;
+  function ensureNewsprintFonts() {
+    if (newsprintFontsInjected) return;
+    newsprintFontsInjected = true;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = './newsprint-fonts.css';
+    document.head.appendChild(l);
+  }
+
+  // 以 media 屬性啟用/停用皮膚層 link（clone 安全，切回 github 不需重新下載）
+  function applySkinToLink(link, style) {
+    if (!link) return;
+    if (style === 'newsprint') {
+      link.setAttribute('href', './viewer-newsprint.css');
+      link.setAttribute('media', 'all');
+    } else {
+      link.setAttribute('media', 'not all');
+    }
+  }
+
+  function setSkin(style) {
+    // 同步 template（供下次 render clone）與 live shadow root（即時生效）
+    var tpl = viewer.querySelector('template');
+    if (tpl && tpl.content) applySkinToLink(tpl.content.getElementById('md-skin-css'), style);
+    var sr = viewer.shadowRoot;
+    if (sr) applySkinToLink(sr.getElementById('md-skin-css'), style);
+  }
+
+  function applyStyle(style) {
+    style = (style === 'newsprint') ? 'newsprint' : 'github';
+    state.style = style;
+    if (style === 'newsprint') ensureNewsprintFonts();
+    viewer.setAttribute('data-skin', style);
+    setSkin(style);
+    var btn = document.getElementById('setting-style');
+    if (btn) btn.classList.toggle('active', style === 'newsprint');
+    try { localStorage.setItem(STYLE_KEY, style); } catch (e) {}
+  }
+
+  function toggleStyle() {
+    applyStyle(state.style === 'newsprint' ? 'github' : 'newsprint');
+    M.toast({ html: I18n.t(state.style === 'newsprint' ? 'toast.styleNewsprint' : 'toast.styleGithub') });
   }
 
   /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
@@ -169,12 +221,14 @@
   function renderText(text) {
     return whenZeroMdReady(viewer).then(function () {
       setZeroMdTheme(state.theme);
+      setSkin(state.style);
       // 相對路徑圖片以上傳資料夾為基準
       viewer.setAttribute('marked-base-url', '/upload/' + L.FOLDER + '/');
       mdSlot.textContent = text || '';
       return viewer.render();
     }).then(function () {
       setZeroMdTheme(state.theme);
+      setSkin(state.style);
     });
   }
 
@@ -377,6 +431,7 @@
     });
     document.getElementById('setting-mode').addEventListener('click', toggleTheme);
     document.getElementById('setting-lang').addEventListener('click', cycleLang);
+    document.getElementById('setting-style').addEventListener('click', toggleStyle);
     document.getElementById('setting-format').addEventListener('click', toggleFormat);
     document.getElementById('setting-orientation').addEventListener('click', toggleOrientation);
     document.getElementById('setting-print').addEventListener('click', function () { window.print(); });
@@ -385,8 +440,14 @@
     document.getElementById('setting-clear').addEventListener('click', clearFolder);
 
     // 列印前後切換 zero-md 主題為淺色（列印一律白底黑字），列印後還原
-    window.addEventListener('beforeprint', function () { setZeroMdTheme('light'); });
-    window.addEventListener('afterprint', function () { setZeroMdTheme(state.theme); });
+    window.addEventListener('beforeprint', function () {
+      setZeroMdTheme('light');
+      viewer.setAttribute('data-mode', 'light');   // newsprint 皮膚也走淺色紙本
+    });
+    window.addEventListener('afterprint', function () {
+      setZeroMdTheme(state.theme);
+      viewer.setAttribute('data-mode', state.theme);
+    });
   }
 
   /* ---------- 初始化 ---------- */
@@ -402,6 +463,10 @@
     var saved = 'dark';
     try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
     applyTheme(saved === 'light' ? 'light' : 'dark');
+
+    var savedStyle = 'github';
+    try { savedStyle = localStorage.getItem(STYLE_KEY) || 'github'; } catch (e) {}
+    applyStyle(savedStyle === 'newsprint' ? 'newsprint' : 'github');
 
     try { state.format = localStorage.getItem(FORMAT_KEY) === '1'; } catch (e) { state.format = false; }
 
