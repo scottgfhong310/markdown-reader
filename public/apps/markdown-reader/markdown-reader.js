@@ -145,11 +145,60 @@
     M.toast({ html: I18n.t(state.style === 'newsprint' ? 'toast.styleNewsprint' : 'toast.styleGithub') });
   }
 
+  /* ---------- 內文字型（config 驅動：viewFont / printFont / codeFont） ---------- */
+  // 由 config.json 覆寫 .markdown-body（含標題）與 code/pre 的字型／字級。viewFont/codeFont 套螢幕、
+  // printFont/codePrintFont 套 @media print。用 !important 確保蓋過 github-markdown 與 newsprint 皮膚
+  // ——家族決議：config 字型為「全域基準」（apply 時覆寫兩種閱讀風）。預設 apply:false＝不改外觀。
+  var fontCss = '';
+
+  function cssSafe(s) { return String(s == null ? '' : s).replace(/[;{}<>]/g, '').trim(); }
+
+  // 內文（body + 標題）字型 + 基礎字級
+  function fontRule(f) {
+    if (!f || !f.apply) return '';
+    var css = '', fam = cssSafe(f.family), size = cssSafe(f.size);
+    if (fam) css += '.markdown-body,.markdown-body h1,.markdown-body h2,.markdown-body h3,' +
+      '.markdown-body h4,.markdown-body h5,.markdown-body h6{font-family:' + fam + ' !important;}';
+    if (size) css += '.markdown-body{font-size:' + size + ' !important;}';
+    return css;
+  }
+
+  // code / pre 字型：family 套所有等寬語境；size 只套 pre 區塊（inline code 維持相對字級）
+  function codeRule(f) {
+    if (!f || !f.apply) return '';
+    var css = '', fam = cssSafe(f.family), size = cssSafe(f.size);
+    if (fam) css += '.markdown-body code,.markdown-body kbd,.markdown-body pre,.markdown-body samp{font-family:' + fam + ' !important;}';
+    if (size) css += '.markdown-body pre{font-size:' + size + ' !important;}';
+    return css;
+  }
+
+  function buildFontCss(cfg) {
+    var screen = fontRule(cfg.viewFont) + codeRule(cfg.codeFont);
+    var print = fontRule(cfg.printFont) + codeRule(cfg.codePrintFont);
+    return screen + (print ? '@media print{' + print + '}' : '');
+  }
+
+  // config 字型若用到內建襯線（PT Serif / Noto Serif），確保 newsprint-fonts.css 已載入
+  function ensureConfigFonts(cfg) {
+    var fams = [cfg.viewFont, cfg.printFont, cfg.codeFont, cfg.codePrintFont]
+      .map(function (f) { return (f && f.family) || ''; }).join(' ');
+    if (/PT Serif|Noto Serif/i.test(fams)) ensureNewsprintFonts();
+  }
+
+  // 把字型樣式寫進 shadow DOM（template 供首次 render 複製、shadowRoot 供已渲染後即時更新）
+  function setFonts() {
+    var tpl = viewer.querySelector('template');
+    if (tpl && tpl.content) { var t = tpl.content.getElementById('md-font'); if (t) t.textContent = fontCss; }
+    var sr = viewer.shadowRoot;
+    if (sr) { var s = sr.getElementById('md-font'); if (s) s.textContent = fontCss; }
+  }
+
   /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
 
   // 語言切換後，重繪由 JS 產生的動態內容（靜態文字 / 標題由 I18n.apply 處理）
   function onLangChanged() {
     updateFormatIcon();              // 格式化按鈕 title 依 state.format + 語系
+    updateCopyTitles();              // 程式碼複製鈕 title 依語系
     renderSideNav(state.files);      // 「尚無檔案」訊息
     if (state.current) markActive(state.current);
     document.title = state.current
@@ -209,12 +258,31 @@
   /* ---------- zero-md 渲染 ---------- */
 
   function whenZeroMdReady(el) {
-    if (el && el.ready) return Promise.resolve();
+    // 就緒後額外讓出一個 macrotask：zero-md 在派發 zero-md-ready 的同一個 tick 內若立刻
+    // render()，首次 render 可能卡住不 resolve；隔一個 setTimeout 等它穩定再渲染
+    // （用 setTimeout 而非 rAF，背景分頁的 rAF 會被節流／暫停）。
+    function settle(resolve) { setTimeout(resolve, 0); }
+    if (el && el.ready) return new Promise(settle);
     return new Promise(function (resolve) {
       customElements.whenDefined('zero-md').then(function () {
-        if (el.ready) return resolve();
-        el.addEventListener('zero-md-ready', function () { resolve(); }, { once: true });
+        if (el.ready) return settle(resolve);
+        el.addEventListener('zero-md-ready', function () { settle(resolve); }, { once: true });
       });
+    });
+  }
+
+  // zero-md v3 的 render() 回 { body, styles }；冷啟動時 render() 的 promise 偶爾不 resolve
+  // （內部等待樣式 <link> 的 load 事件，外部 CDN 慢/卡時就吊著）。用 timeout race 避免卡住整條鏈，
+  // 並重試到某次 render 確實回報 body:true 為止（避免畫面停在空白）。
+  function renderUntilBody(tries) {
+    return Promise.race([
+      viewer.render().then(function (res) { return res; }, function () { return null; }),
+      new Promise(function (r) { setTimeout(function () { r('timeout'); }, 1200); })
+    ]).then(function (res) {
+      var painted = res && res !== 'timeout' && res.body;
+      if (painted || tries >= 12) return;
+      return new Promise(function (r) { setTimeout(r, 120); })
+        .then(function () { return renderUntilBody(tries + 1); });
     });
   }
 
@@ -225,10 +293,16 @@
       // 相對路徑圖片以上傳資料夾為基準
       viewer.setAttribute('marked-base-url', '/upload/' + L.FOLDER + '/');
       mdSlot.textContent = text || '';
-      return viewer.render();
+      // 讓出一個 macrotask：zero-md 以 MutationObserver 觀察 <script> slot 並快取內容，
+      // 若設完 textContent 立刻 render() 會讀到舊 slot。等觀察器更新後再渲染。
+      return new Promise(function (r) { setTimeout(r, 0); });
+    }).then(function () {
+      return renderUntilBody(0);
     }).then(function () {
       setZeroMdTheme(state.theme);
       setSkin(state.style);
+      setFonts();
+      addCopyButtons();
     });
   }
 
@@ -238,12 +312,59 @@
     document.body.classList.toggle('is-empty', !show);
   }
 
-  // 依目前的格式化開關，重新渲染 state.text（原文）
+  /* ---------- 程式碼區塊複製鈕（shadow DOM） ---------- */
+  // 內容在 zero-md 的 shadow DOM；每次 render 後呼叫，為每個 <pre> 包一層 .code-wrap 並加複製鈕。
+  // 重渲染時 body 整批換新、舊鈕消失，這裡再補上（冪等：已包過就跳過）。
+  var ICON_COPY = '<svg class="ci ci-copy" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">' +
+    '<path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>';
+  var ICON_DONE = '<svg class="ci ci-done" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">' +
+    '<path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+
+  function addCopyButtons() {
+    var sr = viewer.shadowRoot;
+    if (!sr || !navigator.clipboard) return;   // 無 shadow / 非安全環境（無 clipboard）就不加
+    sr.querySelectorAll('.markdown-body pre').forEach(function (pre) {
+      var parent = pre.parentNode;
+      if (parent && parent.classList && parent.classList.contains('code-wrap')) return;  // 已處理
+      var code = pre.querySelector('code');
+      if (!code) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'code-wrap';
+      parent.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-btn';
+      btn.title = I18n.t('tool.copyCode');
+      btn.innerHTML = ICON_COPY + ICON_DONE;
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(code.textContent).then(function () {
+          btn.classList.add('copied');
+          M.toast({ html: I18n.t('toast.copied'), classes: 'teal' });
+          setTimeout(function () { btn.classList.remove('copied'); }, 1200);
+        }).catch(function () {
+          M.toast({ html: I18n.t('toast.copyFail'), classes: 'red' });
+        });
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  // 切語言但未重渲染時，更新既有複製鈕的 title
+  function updateCopyTitles() {
+    var sr = viewer.shadowRoot;
+    if (sr) sr.querySelectorAll('.copy-btn').forEach(function (b) { b.title = I18n.t('tool.copyCode'); });
+  }
+
+  // 依目前的格式化開關，重新渲染 state.text（原文）。
+  // 先過 md-tweaks 的內容微調（永遠套用，只影響顯示；下載仍用 state.text 原檔）。
   function renderCurrentContent() {
+    var text = (window.MdTweaks ? MdTweaks.apply(state.text) : state.text);
     if (state.format) {
-      return formatterReady.then(function () { return renderText(formatMd(state.text)); });
+      return formatterReady.then(function () { return renderText(formatMd(text)); });
     }
-    return renderText(state.text);
+    return renderText(text);
   }
 
   /* ---------- 開檔 / 檔案清單 ---------- */
@@ -467,6 +588,19 @@
     var savedStyle = 'github';
     try { savedStyle = localStorage.getItem(STYLE_KEY) || 'github'; } catch (e) {}
     applyStyle(savedStyle === 'newsprint' ? 'newsprint' : 'github');
+
+    // 列印分頁設定（config.json）：設好 zero-md host 屬性，
+    // 供 viewer.css 的 :host([data-print-keep~="..."]) 反應（缺檔則維持「可流動」預設）。
+    L.fetchConfig().then(function (cfg) {
+      var keep = [];
+      if (cfg.print.keepTableTogether) keep.push('table');
+      if (cfg.print.keepListTogether) keep.push('list');
+      viewer.setAttribute('data-print-keep', keep.join(' '));
+      // 內文字型（config 驅動）：算出樣式、確保字型載入、注入 shadow DOM
+      fontCss = buildFontCss(cfg);
+      ensureConfigFonts(cfg);
+      setFonts();
+    });
 
     try { state.format = localStorage.getItem(FORMAT_KEY) === '1'; } catch (e) { state.format = false; }
 

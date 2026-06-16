@@ -63,6 +63,9 @@
             <link rel="stylesheet" href="./viewer.css" />
             <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
             <link rel="stylesheet" id="md-skin-css" media="not all" />
+            <!-- 內文字型覆寫（config.json 的 viewFont / printFont / codeFont）：由 JS 依設定填入；空＝不覆寫。
+                 放在皮膚層之後，配合 !important 確保蓋過 github-markdown 與 newsprint。 -->
+            <style id="md-font"></style>
           </template>
         </zero-md>
       </div>
@@ -119,6 +122,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
   <script src="./markdown-reader-lib.js"></script>
+  <script src="./md-tweaks.js"></script>
 
   <!-- i18n 引擎 + 語言字典（先引擎再各語系；新增語言＝多一個 locale 檔） -->
   <script src="./i18n.js"></script>

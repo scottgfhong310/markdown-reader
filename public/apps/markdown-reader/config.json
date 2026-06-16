@@ -1,0 +1,26 @@
+{
+  "print": {
+    "keepTableTogether": false,
+    "keepListTogether": false
+  },
+  "viewFont": {
+    "apply": false,
+    "family": "Georgia, 'Noto Serif TC', 'Noto Serif JP', serif",
+    "size": "17px"
+  },
+  "printFont": {
+    "apply": false,
+    "family": "'PT Serif', 'Noto Serif TC', 'Noto Serif JP', serif",
+    "size": "12pt"
+  },
+  "codeFont": {
+    "apply": false,
+    "family": "'Sarasa Mono TC', 'JetBrains Mono', Consolas, monospace",
+    "size": ""
+  },
+  "codePrintFont": {
+    "apply": false,
+    "family": "'Sarasa Mono TC', Consolas, monospace",
+    "size": ""
+  }
+}

@@ -32,6 +32,41 @@
   max-width: 100%;
 }
 
+/* ===== 程式碼區塊複製鈕（由 markdown-reader.js 在 shadow DOM 內，把每個 <pre> 包進 .code-wrap 後加上） =====
+ * 包一層 .code-wrap 來定位，按鈕才不會被 <pre> 的 overflow-x 卷走；顏色用 currentColor / 中性灰，
+ * 不依賴主題變數，light/dark 都自適應。hover 才現身，觸控裝置一律顯示。 */
+.code-wrap { position: relative; }
+.code-wrap > pre { margin-top: 0; }
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  background: rgba(127, 127, 127, 0.16);
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, background .15s ease, border-color .15s ease;
+}
+.code-wrap:hover .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+.copy-btn:hover { background: rgba(127, 127, 127, 0.3); }
+@media (hover: none) { .copy-btn { opacity: 1; } }   /* 觸控裝置：無 hover，一律顯示 */
+
+.copy-btn .ci { display: block; }
+.copy-btn .ci-done { display: none; color: #3fb950; }   /* 複製成功的綠勾 */
+.copy-btn.copied { border-color: #3fb950; }
+.copy-btn.copied .ci-copy { display: none; }
+.copy-btn.copied .ci-done { display: block; }
+
 /* ===== 列印：強制淺底深字、移除陰影 ===== */
 @media print {
   :host {
@@ -52,6 +87,9 @@
     background: transparent !important;
   }
 
+  /* 互動元素（複製鈕）列印時隱藏 */
+  .copy-btn { display: none !important; }
+
   .markdown-body pre,
   .markdown-body code,
   .markdown-body blockquote {
@@ -67,16 +105,68 @@
     content: "" !important;
   }
 
+  /* 標題不落頁尾：與下文同頁 */
   h1, h2, h3, h4, h5, h6 {
     break-after: avoid-page;
   }
 
-  p, blockquote, pre, table, ul, ol {
+  /* 小塊整塊保留（不會留下大片空白） */
+  p, blockquote, pre {
     break-inside: avoid;
   }
+
+  /* 表格 / 清單預設「可跨頁流動」：
+     避免整塊裝不下時被推到新頁（無端換頁）、或把前一行標籤孤立在頁尾。
+     表格仍保護單列不被腰斬、跨頁時自動重印表頭。
+     需要「整塊絕不切」時，由 config.json 打開對應 host 屬性（見 markdown-reader.js）。 */
+  table tr { break-inside: avoid; }
+  table thead { display: table-header-group; }
+
+  :host([data-print-keep~="table"]) table { break-inside: avoid; }
+  :host([data-print-keep~="list"]) ul,
+  :host([data-print-keep~="list"]) ol { break-inside: avoid; }
 
   pre {
     white-space: pre-wrap !important;
     word-break: break-word !important;
   }
+
+  /* ===== 列印時把「深底亮字」的 inline-style SVG 反轉成「淺底深字」（由 mdx / markdown-library 移植） =====
+     內容裡的圖表 SVG 以 inline style 寫死「深色面板」配色（為螢幕暗色閱讀設計）；列印整頁
+     轉白底時這些 SVG 仍是深底會吃墨。inline style 需用屬性選擇器 [style*="…"] + !important
+     才蓋得過。僅 @media print 觸發，螢幕（含 light/dark）一律維持 SVG 原本設計。
+     註：rgb() 內的逗號後空格須與來源 SVG 的 inline style 完全一致，否則子字串比對不中。 */
+
+  /* 文字 */
+  .markdown-body svg [style*="fill:rgb(250, 249, 245)"] { fill: rgb(38, 38, 36) !important; }
+  .markdown-body svg [style*="fill:rgb(194, 192, 182)"] { fill: rgb(110, 108, 102) !important; }
+
+  /* 格線 */
+  .markdown-body svg [style*="stroke:rgba(222, 220, 209, 0.3)"]  { stroke: rgba(0, 0, 0, 0.18) !important; }
+  .markdown-body svg [style*="stroke:rgba(222, 220, 209, 0.15)"] { stroke: rgba(0, 0, 0, 0.08) !important; }
+
+  /* 資料中心 — 藍 */
+  .markdown-body svg [style*="fill:rgb(12, 68, 124)"]      { fill:   rgb(225, 235, 248) !important; }
+  .markdown-body svg [style*="stroke:rgb(133, 183, 235)"]  { stroke: rgb(20, 75, 140) !important; }
+  .markdown-body svg [style*="fill:rgb(133, 183, 235)"]    { fill:   rgb(20, 75, 140) !important; }
+
+  /* AI PC — 紫 */
+  .markdown-body svg [style*="fill:rgb(60, 52, 137)"]      { fill:   rgb(232, 230, 246) !important; }
+  .markdown-body svg [style*="stroke:rgb(175, 169, 236)"]  { stroke: rgb(70, 60, 155) !important; }
+  .markdown-body svg [style*="fill:rgb(175, 169, 236)"]    { fill:   rgb(70, 60, 155) !important; }
+
+  /* 智慧手機 — 綠 */
+  .markdown-body svg [style*="fill:rgb(8, 80, 65)"]        { fill:   rgb(220, 240, 232) !important; }
+  .markdown-body svg [style*="stroke:rgb(93, 202, 165)"]   { stroke: rgb(15, 100, 78) !important; }
+  .markdown-body svg [style*="fill:rgb(93, 202, 165)"]     { fill:   rgb(15, 100, 78) !important; }
+
+  /* 車用 — 橘紅 */
+  .markdown-body svg [style*="fill:rgb(113, 43, 19)"]      { fill:   rgb(250, 230, 222) !important; }
+  .markdown-body svg [style*="stroke:rgb(240, 153, 123)"]  { stroke: rgb(140, 55, 25) !important; }
+  .markdown-body svg [style*="fill:rgb(240, 153, 123)"]    { fill:   rgb(140, 55, 25) !important; }
+
+  /* 邊緣／機器人 — 琥珀 */
+  .markdown-body svg [style*="fill:rgb(99, 56, 6)"]        { fill:   rgb(252, 238, 215) !important; }
+  .markdown-body svg [style*="stroke:rgb(239, 159, 39)"]   { stroke: rgb(135, 75, 5) !important; }
+  .markdown-body svg [style*="fill:rgb(239, 159, 39)"]     { fill:   rgb(135, 75, 5) !important; }
 }

@@ -14,6 +14,7 @@
  *
  * Public API：
  *   MarkdownReaderLib.FOLDER                  → 'markdown-reader'
+ *   MarkdownReaderLib.fetchConfig()           → Promise<{print:{keepTableTogether,keepListTogether}}>  讀 config.json（缺檔回預設）
  *   MarkdownReaderLib.isReadable(name)        → boolean   是否為支援的 markdown / 文字副檔名
  *   MarkdownReaderLib.uploadFile(file)        → Promise<resp>   上傳單一檔案
  *   MarkdownReaderLib.listFiles()             → Promise<Array<{name,size,mtime}>>
@@ -32,6 +33,34 @@
   var FILES_API = '/api/markdown-reader/files';
   var CLEAR_API = '/api/markdown-reader/clear';
   var STATIC_BASE = '/upload/' + FOLDER + '/';
+  var CONFIG_URL = '/apps/' + FOLDER + '/config.json';
+
+  // app 設定的後備預設（config.json 缺檔 / 壞檔 / 缺鍵時使用）。
+  // print.keepTableTogether / keepListTogether：列印時是否「整塊絕不跨頁切」（預設否＝可流動）。
+  // viewFont / printFont：覆寫內文字型；codeFont / codePrintFont：覆寫 code/pre 字型。
+  // 皆 { apply, family, size }；apply 預設 false＝沿用 github/newsprint 預設。
+  function fontCfg(o) {
+    var f = (o && typeof o === 'object') ? o : {};
+    return {
+      apply: f.apply === true,
+      family: typeof f.family === 'string' ? f.family : '',
+      size: typeof f.size === 'string' ? f.size : ''
+    };
+  }
+  function mergeConfig(cfg) {
+    var c = (cfg && typeof cfg === 'object') ? cfg : {};
+    var p = (c.print && typeof c.print === 'object') ? c.print : {};
+    return {
+      print: {
+        keepTableTogether: p.keepTableTogether === true,
+        keepListTogether: p.keepListTogether === true
+      },
+      viewFont: fontCfg(c.viewFont),
+      printFont: fontCfg(c.printFont),
+      codeFont: fontCfg(c.codeFont),
+      codePrintFont: fontCfg(c.codePrintFont)
+    };
+  }
 
   // 支援的副檔名（markdown 與常見純文字）
   var READABLE_RE = /\.(md|markdown|mdown|mkd|mkdn|mdwn|mdtxt|text|txt)$/i;
@@ -50,6 +79,17 @@
   var MarkdownReaderLib = {
 
     FOLDER: FOLDER,
+
+    /**
+     * 讀取 app 設定（/apps/markdown-reader/config.json）。
+     * 純資料：缺檔 / 解析失敗都回後備預設，永不 reject（由控制器套到 DOM）。
+     */
+    fetchConfig: function () {
+      return fetch(bust(CONFIG_URL), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (cfg) { return mergeConfig(cfg); });
+    },
 
     /** 是否為可閱讀的 markdown / 文字檔 */
     isReadable: function (name) {
