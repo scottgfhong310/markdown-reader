@@ -6,6 +6,7 @@ I18n.register('zh-Hant', {
   'drop.text': '放開以上傳到 /upload/markdown-reader',
   'side.header': '檔案清單',
   'side.noFiles': '尚無檔案，拖拉上傳吧',
+  'loading': '載入中…',
   'tool.menu': '檔案清單',
   'tool.mode': '切換 light / dark',
   'tool.lang': '語言',

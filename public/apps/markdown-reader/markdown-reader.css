@@ -235,8 +235,41 @@ body.is-empty .viewer-card {
 }
 
 /* Materialize toast 在列印時不要出現 */
+/* ===== 載入動畫（Claude 風「思考中」呼吸脈動點 + 文字；抓檔／渲染期間由 JS 加 .show 顯示） ===== */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--overlay);          /* 半透明遮罩，跟著 light/dark 主題 */
+  backdrop-filter: blur(2px);
+  pointer-events: none;                /* 不擋互動 */
+}
+#loading.show { display: flex; }
+#loading .thinking-dot {               /* Claude「思考中」呼吸點：脈動的圓點 */
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ml-think 1.3s ease-in-out infinite;
+}
+#loading .loading-text {
+  color: var(--muted);
+  font-size: .9rem;
+  letter-spacing: .05em;
+}
+@keyframes ml-think {
+  0%, 100% { transform: scale(0.5); opacity: 0.4; }
+  50%      { transform: scale(1);   opacity: 1; }
+}
+
 @media print {
   #toast-container { display: none !important; }
+  #loading { display: none !important; }
   .viewer-card { border: none !important; padding: 0 !important; }
   /* 列印：外層底色一律白（無論目前 light/dark 主題） */
   html, body, main, .app-container, .viewer-card { background: #fff !important; color: #000 !important; }

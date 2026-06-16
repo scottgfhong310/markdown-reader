@@ -347,6 +347,22 @@
     document.body.classList.toggle('is-empty', !show);
   }
 
+  /* ---------- loading 動畫 ---------- */
+  // 抓檔＋渲染期間顯示 Claude 風脈動點；用延遲避免快速切檔閃一下（載入很快就不顯示）。
+  var loadingTimer = null;
+  function showLoading() {
+    clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(function () {
+      var el = document.getElementById('loading');
+      if (el) el.classList.add('show');
+    }, 180);
+  }
+  function hideLoading() {
+    clearTimeout(loadingTimer);
+    var el = document.getElementById('loading');
+    if (el) el.classList.remove('show');
+  }
+
   /* ---------- 程式碼區塊複製鈕（shadow DOM） ---------- */
   // 內容在 zero-md 的 shadow DOM；每次 render 後呼叫，為每個 <pre> 包一層 .code-wrap 並加複製鈕。
   // 重渲染時 body 整批換新、舊鈕消失，這裡再補上（冪等：已包過就跳過）。
@@ -411,8 +427,9 @@
     setPrintOptions();
     markActive(name);
     showViewer(true);
-    return renderText(I18n.t('md.loading', { n: name }))
-      .then(function () { return L.fetchText(name); })
+    // 抓檔＋渲染期間蓋上 loading 動畫（取代原本在 viewer 內渲染 md.loading 文字）
+    showLoading();
+    return L.fetchText(name)
       .then(function (text) {
         state.text = text; // 保留原文（下載用原始檔，不含格式化）
         return renderCurrentContent();
@@ -420,7 +437,8 @@
       .catch(function (err) {
         state.text = '';
         return renderText(I18n.t('md.loadFail', { n: name, e: String(err) }));
-      });
+      })
+      .then(function () { hideLoading(); });   // 成功或失敗都收起 loading
   }
 
   function markActive(name) {

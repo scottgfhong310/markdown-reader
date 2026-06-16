@@ -6,6 +6,7 @@ I18n.register('en', {
   'drop.text': 'Release to upload to /upload/markdown-reader',
   'side.header': 'Files',
   'side.noFiles': 'No files yet — drag to upload',
+  'loading': 'Loading…',
   'tool.menu': 'File list',
   'tool.mode': 'Toggle light / dark',
   'tool.lang': 'Language',

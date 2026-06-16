@@ -42,4 +42,5 @@ npm install && node app.js          # → http://localhost:3000/apps/markdown-re
 - **列印字級放大**：側邊 toggle `#setting-print-scale`（`format_size`）；開啟時注入 template 的 `<style id="md-print-scale">` 一條 `@media print{.markdown-body{font-size:calc(<base> * <factor>) !important;}}`，倍率＝`config.printScale`（預設 `1.25`＝125%、可調），用來抵銷「一張 A4 印 N 頁」的縮小。狀態存 `localStorage('markdown-reader-printscale')`；只影響列印。
 - **程式碼複製鈕**：render 後 `addCopyButtons` 在 shadow DOM 為每個 `<pre>` 包 `.code-wrap` 加複製鈕（inline SVG、hover 現身、列印隱藏、i18n `tool.copyCode`）。
 - **render 韌性**：zero-md 冷啟動 `render()` 偶不 resolve → `renderUntilBody` timeout-race 重試到 `body:true`；設 slot 後讓出 macrotask 再 render。
+- **載入動畫**：`#loading` 覆蓋層（Claude 風「思考中」呼吸脈動點 `.thinking-dot` + 文字）；`openFile` 抓檔／渲染期間 `showLoading()`（180ms 延遲防閃爍）、完成後 `hideLoading()`，取代原本在 viewer 內渲染 `md.loading` 文字。列印隱藏、i18n `loading`。
 - **API 信封**：一律 `{ ok }`；jQuery 3.7.1，後端不依賴 lodash。

@@ -6,6 +6,7 @@ I18n.register('ja', {
   'drop.text': 'ドロップして /upload/markdown-reader にアップロード',
   'side.header': 'ファイル一覧',
   'side.noFiles': 'ファイルがありません — ドラッグでアップロード',
+  'loading': '読み込み中…',
   'tool.menu': 'ファイル一覧',
   'tool.mode': 'ライト / ダーク切替',
   'tool.lang': '言語',

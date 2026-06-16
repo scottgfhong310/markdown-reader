@@ -74,6 +74,12 @@
     </div>
   </main>
 
+  <!-- 載入動畫：抓檔／渲染期間由 JS 加 .show 顯示（Claude 風「思考中」脈動點；延遲 ~180ms 避免快速切檔閃爍） -->
+  <div id="loading" aria-hidden="true">
+    <div class="thinking-dot"></div>
+    <div class="loading-text" data-i18n="loading">載入中…</div>
+  </div>
+
   <!-- 全頁拖拉覆蓋層 -->
   <div id="drop-overlay">
     <div class="drop-box">
