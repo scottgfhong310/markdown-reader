@@ -62,11 +62,16 @@
    * 只處理「內容開頭是 CJK 開括號」的 **…** span（一般 **粗體** 本來就會渲染、不動），跳過程式碼。 */
   function spaceCjkBold(md) {
     var OPEN = '「『（《【〈〔［｛“‘';                                   // CJK / 全形 開引號・括號
-    var span = '\\*\\*[' + OPEN + '](?:(?!\\*\\*)[^\\n])*\\*\\*';         // **〔開括號〕…**（不含換行/巢狀 **）
-    var preRe = new RegExp('([^\\s*])(' + span + ')', 'g');              // 前面緊貼非空白字 → 補空白
-    var postRe = new RegExp('(' + span + ')([^\\s*])', 'g');             // 後面緊貼非空白字 → 補空白
+    // 單次掃描：把「可選的前一字」連同 span 一起消耗（收尾 ** 被吃掉，就不會被當成另一個 **（…**
+    // 的開頭——例：**「甲」**（…**乙** 中那組收尾 ** + （ 不會誤配）。後面是否補空白用 lookahead 判，
+    // 不消耗後一字，所以兩個相鄰粗體共用的中間字也能各自補對。
+    var re = new RegExp('([^\\s*])?(\\*\\*[' + OPEN + '](?:(?!\\*\\*)[^\\n])*\\*\\*)', 'g');
     return withCodeMasked(md, function (s) {
-      return s.replace(preRe, '$1 $2').replace(postRe, '$1 $2');
+      return s.replace(re, function (m, before, span, offset, str) {
+        var after = str.charAt(offset + m.length);
+        var needAfter = after && after !== '*' && !/\s/.test(after);
+        return (before == null ? '' : before + ' ') + span + (needAfter ? ' ' : '');
+      });
     });
   }
 
