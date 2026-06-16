@@ -10,6 +10,19 @@
 (function (window) {
   'use strict';
 
+  // 把程式碼（``` / ~~~ fenced 與 `…` inline）暫存成 NUL 佔位，套用 transform 後還原，
+  // 讓微調不會動到程式碼內容。NUL 邊界不含 ~ / *、也不會撞到內文。
+  function withCodeMasked(md, transform) {
+    var stash = [], NUL = String.fromCharCode(0);
+    function keep(m) { stash.push(m); return NUL + (stash.length - 1) + NUL; }
+    var out = String(md == null ? '' : md)
+      .replace(/```[\s\S]*?```/g, keep)   // ``` fenced code
+      .replace(/~~~[\s\S]*?~~~/g, keep)   // ~~~ fenced code
+      .replace(/`[^`\n]*`/g, keep);       // inline code
+    out = transform(out);
+    return out.replace(new RegExp(NUL + '(\\d+)' + NUL, 'g'), function (m, i) { return stash[+i]; });
+  }
+
   /* 微調 1：**Tags** 後的 hashtag 清單 → 收成單行、每個 tag 以反引號包成行內碼。
    * 兩種輸入都吃：
    *   項目清單              單行（可能已含反引號）
@@ -34,26 +47,34 @@
 
   /* 微調 2：把「前後皆無空白的單一 ~」補成 ` ~ `（前後各一個空白）。
    *   Option 1~Option 7   →   Option 1 ~ Option 7
-   * 否則成對的單一 ~ 會被 GFM 當刪除線分隔符（~text~）。
-   * 保護：跳過程式碼（``` / ~~~ fenced 與 `…` inline），且不動刻意的雙波浪 ~~刪除線~~
-   *      （單 ~ 緊鄰另一個 ~ 時不處理）。 */
+   * 否則成對的單一 ~ 會被 GFM 當刪除線分隔符（~text~）。跳過程式碼；不動雙波浪 ~~刪除線~~
+   *（單 ~ 緊鄰另一個 ~ 時不處理）。 */
   function spaceBareTilde(md) {
-    var stash = [];
-    var NUL = String.fromCharCode(0);   // placeholder 邊界：不含 ~（不被下面 tilde 規則動到）、也不撞內文
-    function keep(m) { stash.push(m); return NUL + (stash.length - 1) + NUL; }
-    var out = String(md == null ? '' : md)
-      .replace(/```[\s\S]*?```/g, keep)   // ``` fenced code
-      .replace(/~~~[\s\S]*?~~~/g, keep)   // ~~~ fenced code
-      .replace(/`[^`\n]*`/g, keep);       // inline code
-    out = out.replace(/(?<=[^\s~])~(?=[^\s~])/g, ' ~ ');
-    var re = new RegExp(NUL + '(\\d+)' + NUL, 'g');
-    return out.replace(re, function (m, i) { return stash[+i]; });
+    return withCodeMasked(md, function (s) {
+      return s.replace(/(?<=[^\s~])~(?=[^\s~])/g, ' ~ ');
+    });
+  }
+
+  /* 微調 3：CJK 場景下，** 緊跟著全形開引號/括號（如 **「）時，GFM 的 flanking 規則
+   * 會認不出粗體分隔符（** 後是標點、前是 CJK 字 → 不算合法開強調）：
+   *   追蹤的**「真言」雙重語境問題**。  →  追蹤的 **「真言」雙重語境問題** 。
+   * 在這組 **…**（內容以 CJK 開括號開頭）的外側補空白，讓它能正確變粗體。
+   * 只處理「內容開頭是 CJK 開括號」的 **…** span（一般 **粗體** 本來就會渲染、不動），跳過程式碼。 */
+  function spaceCjkBold(md) {
+    var OPEN = '「『（《【〈〔［｛“‘';                                   // CJK / 全形 開引號・括號
+    var span = '\\*\\*[' + OPEN + '](?:(?!\\*\\*)[^\\n])*\\*\\*';         // **〔開括號〕…**（不含換行/巢狀 **）
+    var preRe = new RegExp('([^\\s*])(' + span + ')', 'g');              // 前面緊貼非空白字 → 補空白
+    var postRe = new RegExp('(' + span + ')([^\\s*])', 'g');             // 後面緊貼非空白字 → 補空白
+    return withCodeMasked(md, function (s) {
+      return s.replace(preRe, '$1 $2').replace(postRe, '$1 $2');
+    });
   }
 
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   var TWEAKS = [
     inlineTagList,
-    spaceBareTilde
+    spaceBareTilde,
+    spaceCjkBold
   ];
 
   function apply(md) {
