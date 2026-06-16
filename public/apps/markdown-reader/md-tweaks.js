@@ -55,22 +55,33 @@
     });
   }
 
-  /* 微調 3：CJK 場景下，** 緊跟著全形開引號/括號（如 **「）時，GFM 的 flanking 規則
-   * 會認不出粗體分隔符（** 後是標點、前是 CJK 字 → 不算合法開強調）：
-   *   追蹤的**「真言」雙重語境問題**。  →  追蹤的 **「真言」雙重語境問題** 。
-   * 在這組 **…**（內容以 CJK 開括號開頭）的外側補空白，讓它能正確變粗體。
-   * 只處理「內容開頭是 CJK 開括號」的 **…** span（一般 **粗體** 本來就會渲染、不動），跳過程式碼。 */
+  /* 微調 3：CJK 場景下，全形開引號/括號（「『（《… in OPEN）緊貼 ** 時，GFM/marked 的 flanking
+   * 規則會認不出粗體分隔符，於是在外側補一個空白。兩種觸發各補在不同側：
+   *   A) 開頭 **「…」**（內容以 CJK 開括號開頭）：開頭 ** 夾在「CJK 字 + 開括號」間 → 不算合法開強調
+   *      → 於 span 前補空白（結尾沿用「** 後緊跟非空白字就補」）：
+   *        追蹤的**「真言」雙重語境問題**。  →  追蹤的 **「真言」雙重語境問題** 。
+   *   B) 一般 **粗體**：只有當收尾 ** 緊跟 CJK 開括號（**…**（）時 marked 認不出收尾分隔符
+   *      → 僅在 span 與該開括號間補一個空白（不動開頭）：
+   *        **立基**（六大為體…）  →  **立基** （六大為體…）
+   * 單次掃描：把「可選的前一字」連同 span 一起消耗（收尾 ** 被吃掉，就不會被當成另一個 **（…**
+   * 的開頭——例：**「甲」**（…**乙** 中那組收尾 ** + （ 不會誤配）。後一字用 charAt 前看、不消耗，
+   * 所以兩個相鄰粗體共用的中間字也能各自補對。跳過程式碼。 */
   function spaceCjkBold(md) {
     var OPEN = '「『（《【〈〔［｛“‘';                                   // CJK / 全形 開引號・括號
-    // 單次掃描：把「可選的前一字」連同 span 一起消耗（收尾 ** 被吃掉，就不會被當成另一個 **（…**
-    // 的開頭——例：**「甲」**（…**乙** 中那組收尾 ** + （ 不會誤配）。後面是否補空白用 lookahead 判，
-    // 不消耗後一字，所以兩個相鄰粗體共用的中間字也能各自補對。
-    var re = new RegExp('([^\\s*])?(\\*\\*[' + OPEN + '](?:(?!\\*\\*)[^\\n])*\\*\\*)', 'g');
+    var re = new RegExp('([^\\s*])?(\\*\\*(?:(?!\\*\\*)[^\\n])+\\*\\*)', 'g');
     return withCodeMasked(md, function (s) {
       return s.replace(re, function (m, before, span, offset, str) {
+        var startsOpen = OPEN.indexOf(span.charAt(2)) >= 0;   // 開頭 ** 後第一個內容字是否為 CJK 開括號
         var after = str.charAt(offset + m.length);
-        var needAfter = after && after !== '*' && !/\s/.test(after);
-        return (before == null ? '' : before + ' ') + span + (needAfter ? ' ' : '');
+        var beforeSpace, afterSpace;
+        if (startsOpen) {                                     // A：bracket-led span（既有行為）
+          beforeSpace = (before != null);
+          afterSpace = !!(after && after !== '*' && !/\s/.test(after));
+        } else {                                              // B：一般粗體，只補「**（」這種收尾
+          beforeSpace = false;
+          afterSpace = !!(after && OPEN.indexOf(after) >= 0);
+        }
+        return (before == null ? '' : before) + (beforeSpace ? ' ' : '') + span + (afterSpace ? ' ' : '');
       });
     });
   }

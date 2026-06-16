@@ -37,7 +37,7 @@ npm install && node app.js          # → http://localhost:3000/apps/markdown-re
 - **主題**：CSS 變數 light/dark，預設 dark；同步切換 zero-md 的 github-markdown / highlight.js 樣式表。
 - **閱讀風格（reading style）**：與 light/dark 正交的第二軸，側邊 `newspaper` toggle（`#setting-style`，狀態存 `localStorage('markdown-reader-style')`，預設 `github`）。`newsprint` 風以 `viewer-newsprint.css` 疊在 github-markdown 之上換成襯線紙感，明暗跟著主題走（host `data-mode`，dark 為衍生的「暖調紙夜」）；皮膚 link 以 `media="not all"` 停用、字型懶載。
 - **文體格式化（MdFormater）預設關閉**（顯示原文）；側邊 `auto_fix_high` toggle 切換，**下載永遠是原檔**。
-- **內容微調 `md-tweaks.js`**（`window.MdTweaks`）：渲染前對 .md 原文做純字串微調（依序套用、只影響顯示、下載仍原檔）；目前 ①`**Tags**`→行內碼 ②單一 `~` 補空白防誤判刪除線 ③CJK `**「粗體」**` 外側補空白（GFM flanking）。由 `renderCurrentContent` 在 `formatMd` 前套用。
+- **內容微調 `md-tweaks.js`**（`window.MdTweaks`）：渲染前對 .md 原文做純字串微調（依序套用、只影響顯示、下載仍原檔）；目前 ①`**Tags**`→行內碼 ②單一 `~` 補空白防誤判刪除線 ③CJK 粗體鄰全形開括號補空白（`**「粗體」**` 與 `**粗體**（`；GFM/marked flanking）。由 `renderCurrentContent` 在 `formatMd` 前套用。
 - **config 驅動字型**：`config.json` 的 `viewFont`/`printFont`/`codeFont`/`codePrintFont`（`apply/family/size`）覆寫內文與 code/pre 字型，注入 template 的 `<style id="md-font">`（shadow DOM），`!important` 蓋過 github/newsprint；預設 `apply:false`。
 - **列印字級放大**：側邊 toggle `#setting-print-scale`（`format_size`）；開啟時注入 template 的 `<style id="md-print-scale">` 一條 `@media print{.markdown-body{font-size:calc(<base> * <factor>) !important;}}`，倍率＝`config.printScale`（預設 `1.25`＝125%、可調），用來抵銷「一張 A4 印 N 頁」的縮小。狀態存 `localStorage('markdown-reader-printscale')`；只影響列印。
 - **程式碼複製鈕**：render 後 `addCopyButtons` 在 shadow DOM 為每個 `<pre>` 包 `.code-wrap` 加複製鈕（inline SVG、hover 現身、列印隱藏、i18n `tool.copyCode`）。
