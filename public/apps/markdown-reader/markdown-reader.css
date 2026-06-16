@@ -242,4 +242,7 @@ body.is-empty .viewer-card {
   html, body, main, .app-container, .viewer-card { background: #fff !important; color: #000 !important; }
   main { padding: 0 !important; }
   .app-container { width: 100% !important; max-width: none !important; }
+  /* 檔案清單側欄是 position:fixed；不隱藏的話會被當成「每頁都出現」的固定元素，
+     其深色面板偏移到右緣外，左緣+陰影就在每頁右側畫出一條直線。列印一律隱藏。 */
+  .sidenav, .sidenav-overlay { display: none !important; }
 }
