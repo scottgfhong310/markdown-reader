@@ -42,6 +42,7 @@
   var THEME_KEY = 'markdown-reader-theme';
   var FORMAT_KEY = 'markdown-reader-format';
   var STYLE_KEY = 'markdown-reader-style';   // 閱讀風格：'github' | 'newsprint'
+  var PRINT_SCALE_KEY = 'markdown-reader-printscale';   // 列印字級放大 toggle 狀態
   // 語系由 I18n 引擎管理（localStorage 'lang'，預設 zh-Hant），不再自行保存。
 
   var viewer = document.getElementById('viewer');
@@ -55,6 +56,7 @@
     theme: 'dark',
     style: 'github', // 閱讀風格：'github'（預設）| 'newsprint'（報紙襯線紙感）
     format: false,   // 佛典文體格式化開關（側邊 toggle）；預設關閉＝顯示原文
+    printScale: false, // 列印字級放大開關（側邊 toggle）；預設關閉＝原始大小
     orientation: 'portrait',
     current: null,   // 目前開啟的檔名
     text: '',        // 目前檔案原文
@@ -193,11 +195,43 @@
     if (sr) { var s = sr.getElementById('md-font'); if (s) s.textContent = fontCss; }
   }
 
+  /* ---------- 列印字級放大（side-tool toggle；倍率由 config.printScale 提供，預設 1.25＝125%） ---------- */
+  // 抵銷「一張 A4 印 N 頁」造成的縮小：開啟時讓列印基準字級 × 倍率（標題/code 以 em/% 等比跟著放大；
+  // 字會自動換行，不會橫向溢出）。寫進 shadow DOM 內 @media print，只影響列印、不動螢幕。
+  var printScaleFactor = 1.25;     // config.printScale
+  var printBaseSize = '12pt';      // 列印基準字級：printFont 有套用就用它，否則 viewer.css 的 12pt
+
+  function setPrintScale() {
+    var css = state.printScale
+      ? '@media print{.markdown-body{font-size:calc(' + printBaseSize + ' * ' + printScaleFactor + ') !important;}}'
+      : '';
+    var tpl = viewer.querySelector('template');
+    if (tpl && tpl.content) { var t = tpl.content.getElementById('md-print-scale'); if (t) t.textContent = css; }
+    var sr = viewer.shadowRoot;
+    if (sr) { var s = sr.getElementById('md-print-scale'); if (s) s.textContent = css; }
+  }
+
+  function updatePrintScaleIcon() {
+    var el = document.getElementById('setting-print-scale');
+    if (!el) return;
+    el.classList.toggle('active', state.printScale);
+    el.title = I18n.t('tool.printScale', { p: Math.round(printScaleFactor * 100) });
+  }
+
+  function togglePrintScale() {
+    state.printScale = !state.printScale;
+    try { localStorage.setItem(PRINT_SCALE_KEY, state.printScale ? '1' : '0'); } catch (e) {}
+    updatePrintScaleIcon();
+    setPrintScale();
+    M.toast({ html: I18n.t(state.printScale ? 'toast.printScaleOn' : 'toast.printScaleOff', { p: Math.round(printScaleFactor * 100) }) });
+  }
+
   /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
 
   // 語言切換後，重繪由 JS 產生的動態內容（靜態文字 / 標題由 I18n.apply 處理）
   function onLangChanged() {
     updateFormatIcon();              // 格式化按鈕 title 依 state.format + 語系
+    updatePrintScaleIcon();          // 列印字級放大鈕 title 依倍率 + 語系
     updateCopyTitles();              // 程式碼複製鈕 title 依語系
     renderSideNav(state.files);      // 「尚無檔案」訊息
     if (state.current) markActive(state.current);
@@ -302,6 +336,7 @@
       setZeroMdTheme(state.theme);
       setSkin(state.style);
       setFonts();
+      setPrintScale();
       addCopyButtons();
     });
   }
@@ -557,6 +592,8 @@
     document.getElementById('setting-orientation').addEventListener('click', toggleOrientation);
     document.getElementById('setting-print').addEventListener('click', function () { window.print(); });
     document.getElementById('setting-download').addEventListener('click', downloadCurrent);
+    var scaleBtn = document.getElementById('setting-print-scale');
+    if (scaleBtn) scaleBtn.addEventListener('click', togglePrintScale);
     document.getElementById('setting-clear-page').addEventListener('click', clearPage);
     document.getElementById('setting-clear').addEventListener('click', clearFolder);
 
@@ -600,15 +637,22 @@
       fontCss = buildFontCss(cfg);
       ensureConfigFonts(cfg);
       setFonts();
+      // 列印字級放大：倍率 + 基準字級（printFont 有套用就以它為基準），套用目前 toggle 狀態
+      printScaleFactor = cfg.printScale || 1.25;
+      printBaseSize = (cfg.printFont && cfg.printFont.apply && cfg.printFont.size) ? cfg.printFont.size : '12pt';
+      setPrintScale();
+      updatePrintScaleIcon();
     });
 
     try { state.format = localStorage.getItem(FORMAT_KEY) === '1'; } catch (e) { state.format = false; }
+    try { state.printScale = localStorage.getItem(PRINT_SCALE_KEY) === '1'; } catch (e) { state.printScale = false; }
 
     // i18n：套用靜態文字 / 標題 + documentElement.lang（引擎自行解析初始語系：
     // ?lang → localStorage('lang') → 瀏覽器語言 → zh-Hant）。
     I18n.apply(document);
     document.addEventListener('i18n:changed', onLangChanged);
     updateFormatIcon();                     // 初始化格式化按鈕 title（i18n:changed 初次不觸發）
+    updatePrintScaleIcon();
     document.title = I18n.t('title.suffix');
 
     setPrintOptions();

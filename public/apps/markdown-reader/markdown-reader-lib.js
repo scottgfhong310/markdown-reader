@@ -58,7 +58,9 @@
       viewFont: fontCfg(c.viewFont),
       printFont: fontCfg(c.printFont),
       codeFont: fontCfg(c.codeFont),
-      codePrintFont: fontCfg(c.codePrintFont)
+      codePrintFont: fontCfg(c.codePrintFont),
+      // 列印字級放大倍率（side-tool toggle 開啟時套用；1.25 = 125%）
+      printScale: (typeof c.printScale === 'number' && c.printScale > 0) ? c.printScale : 1.25
     };
   }
 

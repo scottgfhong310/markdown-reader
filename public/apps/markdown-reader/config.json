@@ -3,6 +3,7 @@
     "keepTableTogether": false,
     "keepListTogether": false
   },
+  "printScale": 1.25,
   "viewFont": {
     "apply": false,
     "family": "Georgia, 'Noto Serif TC', 'Noto Serif JP', serif",

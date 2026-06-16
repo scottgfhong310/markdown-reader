@@ -66,6 +66,8 @@
             <!-- 內文字型覆寫（config.json 的 viewFont / printFont / codeFont）：由 JS 依設定填入；空＝不覆寫。
                  放在皮膚層之後，配合 !important 確保蓋過 github-markdown 與 newsprint。 -->
             <style id="md-font"></style>
+            <!-- 列印字級放大（side-tool toggle 開啟時，由 JS 填入 @media print 的字級規則；空＝原始大小） -->
+            <style id="md-print-scale"></style>
           </template>
         </zero-md>
       </div>
@@ -106,6 +108,10 @@
   </div>
   <div id="setting-print" class="side-tool" data-i18n-title="tool.print" title="列印">
     <i class="material-icons">print</i>
+  </div>
+  <!-- 列印字級放大 toggle：開啟時列印字級＝原始 × config.printScale（預設 125%） -->
+  <div id="setting-print-scale" class="side-tool" data-i18n-title="tool.printScale" title="列印字級放大">
+    <i class="material-icons">format_size</i>
   </div>
   <div id="setting-download" class="side-tool" data-i18n-title="tool.download" title="下載目前的 Markdown">
     <i class="material-icons">download</i>
