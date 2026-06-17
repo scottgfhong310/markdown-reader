@@ -250,21 +250,11 @@ body.is-empty .viewer-card {
   pointer-events: none;                /* 不擋互動 */
 }
 #loading.show { display: flex; }
-#loading .thinking-dot {               /* Claude「思考中」呼吸點：脈動的圓點 */
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: ml-think 1.3s ease-in-out infinite;
-}
+#loading .thinking-dot { --td-color: var(--accent); }   /* 點本體 + keyframes 在共用 thinking-dot.css；此處只指定本 app 配色 */
 #loading .loading-text {
   color: var(--muted);
   font-size: .9rem;
   letter-spacing: .05em;
-}
-@keyframes ml-think {
-  0%, 100% { transform: scale(0.5); opacity: 0.4; }
-  50%      { transform: scale(1);   opacity: 1; }
 }
 
 @media print {
