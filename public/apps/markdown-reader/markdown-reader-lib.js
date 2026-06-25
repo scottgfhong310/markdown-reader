@@ -37,6 +37,8 @@
 
   // app 設定的後備預設（config.json 缺檔 / 壞檔 / 缺鍵時使用）。
   // print.keepTableTogether / keepListTogether：列印時是否「整塊絕不跨頁切」（預設否＝可流動）。
+  // print.pageBreakBeforeH1：列印時每個 h1（首個除外）另起新頁（預設否）。
+  // print.allowBlockBreak：允許 p / blockquote / pre 跨頁；allowRowBreak：允許表格單列跨頁（皆預設否＝保護）。
   // viewFont / printFont：覆寫內文字型；codeFont / codePrintFont：覆寫 code/pre 字型。
   // 皆 { apply, family, size }；apply 預設 false＝沿用 github/newsprint 預設。
   function fontCfg(o) {
@@ -53,7 +55,10 @@
     return {
       print: {
         keepTableTogether: p.keepTableTogether === true,
-        keepListTogether: p.keepListTogether === true
+        keepListTogether: p.keepListTogether === true,
+        pageBreakBeforeH1: p.pageBreakBeforeH1 === true,
+        allowBlockBreak: p.allowBlockBreak === true,
+        allowRowBreak: p.allowRowBreak === true
       },
       viewFont: fontCfg(c.viewFont),
       printFont: fontCfg(c.printFont),

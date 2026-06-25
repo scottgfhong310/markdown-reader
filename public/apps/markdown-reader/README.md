@@ -1,89 +1,78 @@
 # markdown-reader — 閱讀與列印 Markdown
 
-以拖拉方式上傳並閱讀 Markdown 檔案的單頁 WebApp。以 `zero-md` 渲染內容，支援 light / dark 切換與列印（直向 / 橫向）。功能對齊 `mdx/index.html`，但把「讀入 Markdown」的方式簡化為「拖拉上傳到伺服器資料夾」。
+拖拉上傳、即時閱讀與列印 Markdown 的單頁 WebApp。以 `zero-md` 渲染，內容存於伺服器 `public/upload/markdown-reader/`（與程式碼分離）。無 page header / footer，操作集中在右側浮動工具列。架構細節見 [DESIGN.md](DESIGN.md)。
+
+> 與姊妹作 **markdown-library** 共用同一套渲染 / 主題 / i18n / 列印核心；差別在讀入方式（本作＝上傳，library＝策劃式文庫深連結）。
 
 ---
 
-## 目錄結構
+## 功能
 
-```
-apps/markdown-reader/
-├── index.html               # 主程式（DOM / zero-md 呈現與事件）
-├── markdown-reader-lib.js   # MarkdownReaderLib：上傳 / 列表 / 清空 / 下載等工具
-├── side-tool.css            # 右側浮動工具列樣式
-└── README.md
-```
-
-對應後端與資料：
-
-```
-routes/markdown-reader.js         # GET /files、POST /clear
-public/upload/markdown-reader/    # 上傳檔案存放處（同名覆寫）
-```
-
----
-
-## 外部相依
-
-| 套件 | 用途 |
-|------|------|
-| `zero-md@3` | 將 Markdown 渲染為帶 GitHub 樣式的 HTML |
-| `github-markdown-css@5` | zero-md 內容的 light / dark 主題 |
-| `highlight.js@11` styles | 程式碼區塊的 light / dark 配色 |
-| `Materialize 1.0.0` | UI 元件（Sidenav、Toast） |
-| `jQuery 4.0.0` | DOM 操作與事件 |
-| `Lodash 4` | `_.escape` 等小工具 |
-
-> 主要功能皆以 library / `<script>` 的方式引入 `index.html`，符合「以 Library 引入」的要求。
+- 📥 **拖拉上傳**：`.md` / `.txt` 拖到頁面任意處即上傳並閱讀，**同名覆寫**
+- 🌗 **Light / Dark** 切換（記憶於 localStorage）
+- 🌐 **三語介面**：繁體中文 / English / 日本語（預設 `zh-Hant`；`translate` 循環切換）
+- 📰 **閱讀風格**：GitHub ↔ Newsprint（報紙襯線紙感）toggle
+- ✨ **文體格式化**：佛典文體 `MdFormater` toggle（動態載入，載不到退回原文）
+- 🖨️ **列印**：直向 / 橫向、列印字級放大、強制白底黑字
+- ⚙️ **列印分頁設定面板**：表格 / 清單整塊不切、H1 換頁、放寬小區塊 / 表格列跨頁（即時套用、記憶於本機）
+- 🗂️ 多檔側欄、下載原檔、清除畫面、清空資料夾
 
 ---
 
 ## 使用方式
 
-1. **上傳**：把 `.md` / `.markdown` / `.txt` 等檔案拖拉到頁面任意位置（或點擊空狀態選檔）。
-   檔案會上傳到 `/upload/markdown-reader`，**檔名相同則直接覆寫**。
-2. **閱讀**：上傳後立即在頁面渲染；多檔時可由右上角 `menu` 開啟側欄清單切換。
-3. **右側工具列（side tools）**：
+1. **上傳**：把檔案拖到頁面任意位置（或點空狀態選檔）→ 上傳到 `/upload/markdown-reader`，同名覆寫。
+2. **閱讀**：上傳後立即渲染；多檔時由 `menu` 開側欄切換。
+3. **右側工具列**（12 顆，由上而下）：
+
    | 圖示 | 功能 |
    |------|------|
-   | `menu` | 開啟檔案清單側欄（開啟時其餘工具會隱藏，收起後再出現） |
-   | `dark_mode` / `light_mode` | 切換頁面 light / dark（記憶於 localStorage） |
-   | `translate` | 切換介面語系：English → 繁體中文 → 日本語 循環（預設 English，記憶於 localStorage） |
-   | `auto_fix_high` | 文體格式化開關（toggle，開啟時 accent 色；記憶於 localStorage） |
-   | `crop_portrait` / `crop_landscape` | 切換列印方向（直向 / 橫向） |
+   | `menu` | 開啟檔案清單側欄（開啟時其餘工具隱藏） |
+   | `dark_mode` / `light_mode` | 切換 light / dark |
+   | `translate` | 切換語系（繁中 → English → 日本語 循環） |
+   | `newspaper` | 閱讀風格 GitHub ↔ Newsprint |
+   | `auto_fix_high` | 文體格式化開關 |
+   | `crop_portrait` / `crop_landscape` | 列印方向 |
    | `print` | 呼叫瀏覽器列印 |
-   | `download` | 下載目前開啟的 Markdown（原始檔，不含格式化） |
-   | `clear` | 清除頁面內容（回到初始畫面，不刪除檔案） |
-   | `delete_sweep` | 清空 `/upload/markdown-reader` 下所有檔案 |
+   | `format_size` | 列印字級放大（× `config.printScale`，預設 125%） |
+   | `settings` | **列印分頁設定面板**（5 個 toggle，即時套用） |
+   | `download` | 下載目前檔案（原檔，不含格式化） |
+   | `clear` | 清除頁面內容（不刪檔） |
+   | `delete_sweep` | 清空 `/upload/markdown-reader` |
 
 ---
 
-## 後端 API
-
-由 `routes/markdown-reader.js` 提供，於 `app.js` 掛載於 `/api/markdown-reader`：
+## 後端 API（`routes/markdown-reader.js`，掛載於 `/api/markdown-reader`）
 
 | 方法 / 路徑 | 說明 |
-|------------|------|
-| `POST /api/upload?folder=markdown-reader` | 上傳（沿用既有 `routes/upload.js`，form 欄位 `myFiles`，同名覆寫） |
-| `GET /api/markdown-reader/files` | 列出資料夾內可見檔案 `{ name, size, mtime }`（新→舊） |
-| `POST /api/markdown-reader/clear` | 刪除資料夾內所有可見檔案（保留資料夾與隱藏檔） |
+|---|---|
+| `POST /api/upload?folder=markdown-reader` | 上傳（共用 `routes/upload.js`，欄位 `myFiles`，同名覆寫） |
+| `GET /api/markdown-reader/files` | 列出可見檔 `{ name, size, mtime }`（新→舊） |
+| `POST /api/markdown-reader/clear` | 清空資料夾內可見檔 |
 
-靜態讀檔：`/upload/markdown-reader/<name>`（由 `express.static` 提供）。
+靜態讀檔：`/upload/markdown-reader/<name>`。
 
 ---
 
-## 文體格式化（MdFormater）
+## 設定（`config.json`）
 
-可用側邊 `auto_fix_high` 這顆 **toggle** 開關文體格式化：開啟時以 `/lib/adp-col/mdFormater.js` 的 `MdFormater` 對內容做佛典文體格式化（換行正規化、半形→全形標點、段落標題標記等）後再渲染；關閉時顯示原文。
+`print.{keepTableTogether, keepListTogether, pageBreakBeforeH1, allowBlockBreak, allowRowBreak}`、`viewFont/printFont/codeFont/codePrintFont`、`printScale`。列印分頁五項可由側邊 `settings` 面板即時切換（記憶於 `localStorage('markdown-reader-print')`，config.json 為預設）。
 
-- 開關狀態記憶於 `localStorage`（`markdown-reader-format`），**預設為開**；切換時會即時重渲目前檔案。
-- `MdFormater` 以動態 `import()` 載入；若該檔載不到，會自動退回顯示原文，不影響閱讀。
-- **下載永遠是原始檔**（不含格式化），與 mdx 的行為一致。
-- 注意：`MdFormater` 專為佛典文體設計，套用在一般技術文件可能改動標點或影響表格 / 程式碼區塊——這時把 toggle 關掉即可看原文。
+---
 
-## 與 mdx 的差異
+## 內容版型（在 `.md` 內以 HTML class 使用，列印自適應）
 
-- **讀入方式**：mdx 以 `docs.js` / URL 參數路由載入；本 app 改為「拖拉上傳 → 從伺服器資料夾讀取」。
-- **主題**：mdx 為固定深色（螢幕）；本 app 提供 light / dark 切換。
-- **版面**：沒有 page header / footer，只保留右側 `side tools` 與檔案清單側欄。
-- **格式化**：mdx 僅 `doc` 模式套用 `MdFormater`；本 app 以側邊 toggle 控制（預設開，可隨時關掉看原文）。
+| 寫法 | 效果 |
+|---|---|
+| `<div class="no-print">…</div>` / `<span class="no-print">…</span>` | 螢幕可讀、**列印隱藏**（區塊用法前後留空行） |
+| `<span class="siddham" data-latin="oṃ">𑖌𑖼</span>` | 悉曇字形＋括號讀音（拉丁轉寫，需 Google Fonts 字型） |
+| `<span class="note">…</span>` | 行內小註 |
+| `<div class="right-table-wrap"><table>…</table></div>` | 序號（左大字）＋說明（右對齊）無框表 |
+
+---
+
+## 相依與備註
+
+- 前端庫：`zero-md@3`、`github-markdown-css@5`、`highlight.js@11`、Materialize 1.0、**jQuery 3.7**、Lodash 4；皆 CDN，無 build step。
+- 字型：newsprint 自託管 PT Serif；悉曇 `Noto Sans Siddham` ＋ 轉寫 `Charis SIL` / `Gentium Plus`（Google Fonts，需連網，離線退回 serif）。
+- 前端以**絕對路徑**呼叫 API，須由本專案 Node 伺服器服務於站台根目錄；**不適用 GitHub Pages**。

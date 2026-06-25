@@ -43,6 +43,7 @@
   var FORMAT_KEY = 'markdown-reader-format';
   var STYLE_KEY = 'markdown-reader-style';   // 閱讀風格：'github' | 'newsprint'
   var PRINT_SCALE_KEY = 'markdown-reader-printscale';   // 列印字級放大 toggle 狀態
+  var PRINT_KEY = 'markdown-reader-print';   // 列印分頁設定（config 面板）覆寫，存整個物件
   // 語系由 I18n 引擎管理（localStorage 'lang'，預設 zh-Hant），不再自行保存。
 
   var viewer = document.getElementById('viewer');
@@ -57,6 +58,7 @@
     style: 'github', // 閱讀風格：'github'（預設）| 'newsprint'（報紙襯線紙感）
     format: false,   // 佛典文體格式化開關（側邊 toggle）；預設關閉＝顯示原文
     printScale: false, // 列印字級放大開關（側邊 toggle）；預設關閉＝原始大小
+    print: {},       // 列印分頁設定（config.json 預設 + localStorage 覆寫；由 config 面板控制）
     orientation: 'portrait',
     current: null,   // 目前開啟的檔名
     text: '',        // 目前檔案原文
@@ -224,6 +226,70 @@
     updatePrintScaleIcon();
     setPrintScale();
     M.toast({ html: I18n.t(state.printScale ? 'toast.printScaleOn' : 'toast.printScaleOff', { p: Math.round(printScaleFactor * 100) }) });
+  }
+
+  /* ---------- 列印分頁設定（config 面板：即時 toggle，localStorage 覆寫 config.json） ---------- */
+
+  // 五個列印分頁鍵 ↔ 面板 checkbox id
+  var PRINT_KEYS = ['keepTableTogether', 'keepListTogether', 'pageBreakBeforeH1', 'allowBlockBreak', 'allowRowBreak'];
+  var PRINT_CBOX = {
+    keepTableTogether: 'cfg-keepTable',
+    keepListTogether: 'cfg-keepList',
+    pageBreakBeforeH1: 'cfg-breakH1',
+    allowBlockBreak: 'cfg-allowBlock',
+    allowRowBreak: 'cfg-allowRow'
+  };
+
+  // 依 state.print 設好 viewer 的三個 host 屬性（viewer.css 的 @media print 反應）
+  function applyPrintSettings() {
+    var p = state.print || {};
+    var keep = [];
+    if (p.keepTableTogether) keep.push('table');
+    if (p.keepListTogether) keep.push('list');
+    viewer.setAttribute('data-print-keep', keep.join(' '));
+    viewer.setAttribute('data-print-break', p.pageBreakBeforeH1 ? 'h1' : '');
+    var allow = [];
+    if (p.allowBlockBreak) allow.push('block');
+    if (p.allowRowBreak) allow.push('row');
+    viewer.setAttribute('data-print-allow', allow.join(' '));
+  }
+
+  // 把 localStorage 覆寫疊到 config.json 預設上，得到目前生效的 state.print
+  function loadPrintSettings(cfg) {
+    var base = (cfg && cfg.print) ? cfg.print : {};
+    var p = {};
+    PRINT_KEYS.forEach(function (k) { p[k] = base[k] === true; });
+    try {
+      var saved = JSON.parse(localStorage.getItem(PRINT_KEY) || 'null');
+      if (saved && typeof saved === 'object') {
+        PRINT_KEYS.forEach(function (k) { if (typeof saved[k] === 'boolean') p[k] = saved[k]; });
+      }
+    } catch (e) {}
+    state.print = p;
+  }
+
+  // 面板勾選：更新 state、存 localStorage、即時套用到 viewer
+  function setPrintOption(key, val) {
+    state.print[key] = !!val;
+    try { localStorage.setItem(PRINT_KEY, JSON.stringify(state.print)); } catch (e) {}
+    applyPrintSettings();
+  }
+
+  // 把目前 state.print 反映到面板 checkbox
+  function syncConfigPanel() {
+    PRINT_KEYS.forEach(function (k) {
+      var cb = document.getElementById(PRINT_CBOX[k]);
+      if (cb) cb.checked = !!(state.print && state.print[k]);
+    });
+  }
+
+  // 開啟設定面板（先同步勾選狀態再開）
+  function openConfig() {
+    syncConfigPanel();
+    var el = document.getElementById('config-modal');
+    if (!el) return;
+    var inst = M.Modal.getInstance(el) || M.Modal.init(el);
+    if (inst) inst.open();
   }
 
   /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
@@ -612,6 +678,13 @@
     document.getElementById('setting-download').addEventListener('click', downloadCurrent);
     var scaleBtn = document.getElementById('setting-print-scale');
     if (scaleBtn) scaleBtn.addEventListener('click', togglePrintScale);
+    var cfgBtn = document.getElementById('setting-config');
+    if (cfgBtn) cfgBtn.addEventListener('click', openConfig);
+    // 面板 checkbox：勾選即時套用並存 localStorage
+    PRINT_KEYS.forEach(function (k) {
+      var cb = document.getElementById(PRINT_CBOX[k]);
+      if (cb) cb.addEventListener('change', function () { setPrintOption(k, cb.checked); });
+    });
     document.getElementById('setting-clear-page').addEventListener('click', clearPage);
     document.getElementById('setting-clear').addEventListener('click', clearFolder);
 
@@ -636,6 +709,9 @@
       onCloseEnd: function () { document.body.classList.remove('sidenav-open'); }
     });
 
+    var cfgModal = document.getElementById('config-modal');
+    if (cfgModal) M.Modal.init(cfgModal);
+
     var saved = 'dark';
     try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
     applyTheme(saved === 'light' ? 'light' : 'dark');
@@ -647,10 +723,10 @@
     // 列印分頁設定（config.json）：設好 zero-md host 屬性，
     // 供 viewer.css 的 :host([data-print-keep~="..."]) 反應（缺檔則維持「可流動」預設）。
     L.fetchConfig().then(function (cfg) {
-      var keep = [];
-      if (cfg.print.keepTableTogether) keep.push('table');
-      if (cfg.print.keepListTogether) keep.push('list');
-      viewer.setAttribute('data-print-keep', keep.join(' '));
+      // 列印分頁：config.json 為預設，localStorage（config 面板）覆寫；套到 viewer + 面板
+      loadPrintSettings(cfg);
+      applyPrintSettings();
+      syncConfigPanel();
       // 內文字型（config 驅動）：算出樣式、確保字型載入、注入 shadow DOM
       fontCss = buildFontCss(cfg);
       ensureConfigFonts(cfg);

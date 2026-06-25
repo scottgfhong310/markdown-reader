@@ -32,6 +32,32 @@
   max-width: 100%;
 }
 
+/* ===== 行內標記（由 markdown-library 移植）=====
+ * .siddham：悉曇／梵字放大；.note：靠右小註（固定寬度、行距收緊、四周留白） */
+.markdown-body .siddham {
+  font-family: "Noto Sans Siddham", serif;
+  font-size: 1.4em;          /* 比漢字略大、可辨即可，別太大 */
+  line-height: 1;            /* 不撐高該行行距 */
+  vertical-align: -0.12em;   /* 與漢字基線微調對齊 */
+}
+
+.markdown-body .siddham::after {
+  content: "（" attr(data-latin) "）";  /* 接在字形後、括號包讀音 */
+  font-family: "Charis SIL", "Gentium Plus", serif;
+  font-style: italic;
+  font-size: 0.8rem;         /* 用 rem 脫鉤字形大小，維持正文級可讀 */
+  color: #666;               /* 灰一點，視覺上次於經文本字 */
+  margin-left: 0.1em;
+}
+
+.markdown-body .note {
+  display: inline-block;
+  font-size: 0.7em;
+  vertical-align: middle;
+  line-height: 1.2;
+  margin: 0.25em;
+}
+
 /* ===== 程式碼區塊複製鈕（由 markdown-reader.js 在 shadow DOM 內，把每個 <pre> 包進 .code-wrap 後加上） =====
  * 包一層 .code-wrap 來定位，按鈕才不會被 <pre> 的 overflow-x 卷走；顏色用 currentColor / 中性灰，
  * 不依賴主題變數，light/dark 都自適應。hover 才現身，觸控裝置一律顯示。 */
@@ -90,6 +116,12 @@
   /* 互動元素（複製鈕）列印時隱藏 */
   .copy-btn { display: none !important; }
 
+  /* 螢幕可讀、列印隱藏：在 .md 內用
+     <div class="no-print"> … </div>（區塊，前後各留一空行，內部 markdown 仍正常渲染）
+     或 <span class="no-print"> … </span>（行內）。.screen-only 為同義別名。 */
+  .no-print,
+  .screen-only { display: none !important; }
+
   .markdown-body pre,
   .markdown-body code,
   .markdown-body blockquote {
@@ -115,6 +147,11 @@
     break-inside: avoid;
   }
 
+  /* allowBlockBreak：放寬上面的保護，允許小區塊（p / blockquote / pre）跨頁 */
+  :host([data-print-allow~="block"]) p,
+  :host([data-print-allow~="block"]) blockquote,
+  :host([data-print-allow~="block"]) pre { break-inside: auto; }
+
   /* 表格 / 清單預設「可跨頁流動」：
      避免整塊裝不下時被推到新頁（無端換頁）、或把前一行標籤孤立在頁尾。
      表格仍保護單列不被腰斬、跨頁時自動重印表頭。
@@ -122,9 +159,15 @@
   table tr { break-inside: avoid; }
   table thead { display: table-header-group; }
 
+  /* allowRowBreak：放寬保護，允許表格單一列跨頁 */
+  :host([data-print-allow~="row"]) table tr { break-inside: auto; }
+
   :host([data-print-keep~="table"]) table { break-inside: avoid; }
   :host([data-print-keep~="list"]) ul,
   :host([data-print-keep~="list"]) ol { break-inside: avoid; }
+
+  /* 強制換頁：每個 h1（首個除外）另起新頁；由 config.json 的 pageBreakBeforeH1 打開 */
+  :host([data-print-break~="h1"]) h1:not(:first-child) { break-before: page; }
 
   pre {
     white-space: pre-wrap !important;

@@ -1,7 +1,10 @@
 {
   "print": {
     "keepTableTogether": false,
-    "keepListTogether": false
+    "keepListTogether": false,
+    "pageBreakBeforeH1": false,
+    "allowBlockBreak": true,
+    "allowRowBreak": true
   },
   "printScale": 1.25,
   "viewFont": {

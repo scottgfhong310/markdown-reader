@@ -58,9 +58,10 @@ body.sidenav-open .side-tool {
 #setting-orientation { top: calc(var(--tool-top) + 5 * var(--tool-step)); }
 #setting-print       { top: calc(var(--tool-top) + 6 * var(--tool-step)); }
 #setting-print-scale { top: calc(var(--tool-top) + 7 * var(--tool-step)); }
-#setting-download    { top: calc(var(--tool-top) + 8 * var(--tool-step)); }
-#setting-clear-page  { top: calc(var(--tool-top) + 9 * var(--tool-step)); }
-#setting-clear       { top: calc(var(--tool-top) + 10 * var(--tool-step)); }
+#setting-config      { top: calc(var(--tool-top) + 8 * var(--tool-step)); }
+#setting-download    { top: calc(var(--tool-top) + 9 * var(--tool-step)); }
+#setting-clear-page  { top: calc(var(--tool-top) + 10 * var(--tool-step)); }
+#setting-clear       { top: calc(var(--tool-top) + 11 * var(--tool-step)); }
 
 /* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
 .side-tool.active {
@@ -79,4 +80,39 @@ body.sidenav-open .side-tool {
   #drop-overlay {
     display: none !important;
   }
+}
+
+/* ===== 列印設定面板（config icon 開啟的 Materialize modal；隨 light / dark 變數換色） ===== */
+#config-modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 540px;
+  width: 92%;
+}
+
+#config-modal .modal-content { padding: 22px 26px; }
+#config-modal h5 { margin: 0 0 6px; font-weight: 600; color: var(--text); }
+#config-modal .config-hint { margin: 0 0 14px; font-size: .85rem; color: var(--muted); }
+#config-modal .config-list { margin: 0; }
+#config-modal .config-list li { padding: 7px 0; }
+
+/* Materialize filled-in checkbox：文字 / 勾選色改用主題變數 */
+#config-modal .config-list label,
+#config-modal .config-list label span { color: var(--text); }
+#config-modal .config-list label span { line-height: 1.45; }
+#config-modal [type="checkbox"].filled-in:checked + span::after {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+#config-modal .modal-footer {
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+#config-modal .modal-footer .btn-flat { color: var(--accent); }
+
+@media print {
+  #config-modal, .modal-overlay { display: none !important; }
 }

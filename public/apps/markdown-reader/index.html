@@ -11,6 +11,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
+  <!-- 悉曇本字 + 拉丁轉寫字型（.siddham / ::after 用）；@font-face 於主文件宣告，zero-md shadow DOM 內亦可用 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Charis+SIL:ital@0;1&family=Gentium+Plus:ital@0;1&family=Noto+Sans+Siddham&display=swap" />
+
   <!-- zero-md v3：匯入並自動註冊 <zero-md> -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/zero-md@3?register"></script>
 
@@ -120,6 +126,10 @@
   <div id="setting-print-scale" class="side-tool" data-i18n-title="tool.printScale" title="列印字級放大">
     <i class="material-icons">format_size</i>
   </div>
+  <!-- 列印設定面板：列印分頁選項（keep / break / allow）即時切換 -->
+  <div id="setting-config" class="side-tool" data-i18n-title="tool.config" title="列印設定">
+    <i class="material-icons">settings</i>
+  </div>
   <div id="setting-download" class="side-tool" data-i18n-title="tool.download" title="下載目前的 Markdown">
     <i class="material-icons">download</i>
   </div>
@@ -128,6 +138,24 @@
   </div>
   <div id="setting-clear" class="side-tool" data-i18n-title="tool.clear" title="清空 /upload/markdown-reader">
     <i class="material-icons">delete_sweep</i>
+  </div>
+
+  <!-- 列印設定面板（config 面板）：列印分頁選項即時切換，記憶於 localStorage（config.json 為預設） -->
+  <div id="config-modal" class="modal">
+    <div class="modal-content">
+      <h5 data-i18n="config.title">列印設定</h5>
+      <p class="config-hint" data-i18n="config.hint">即時套用並記憶於本機；config.json 為預設值。</p>
+      <ul class="config-list">
+        <li><label><input type="checkbox" id="cfg-keepTable" class="filled-in" /><span data-i18n="config.keepTable">整個表格保持同頁（不跨頁切斷）</span></label></li>
+        <li><label><input type="checkbox" id="cfg-keepList" class="filled-in" /><span data-i18n="config.keepList">整個清單保持同頁（不跨頁切斷）</span></label></li>
+        <li><label><input type="checkbox" id="cfg-breakH1" class="filled-in" /><span data-i18n="config.breakH1">每個一級標題（H1）另起新頁</span></label></li>
+        <li><label><input type="checkbox" id="cfg-allowBlock" class="filled-in" /><span data-i18n="config.allowBlock">允許段落／引用／程式碼區塊跨頁</span></label></li>
+        <li><label><input type="checkbox" id="cfg-allowRow" class="filled-in" /><span data-i18n="config.allowRow">允許表格單一列跨頁</span></label></li>
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close waves-effect btn-flat" data-i18n="config.close">關閉</a>
+    </div>
   </div>
 
   <!-- 依賴：jQuery / Materialize / Lodash / MarkdownReaderLib -->
