@@ -50,6 +50,23 @@
   margin-left: 0.1em;
 }
 
+/* 缺字 SVG（/lib/Typeface/svgs/）：以 mask + currentColor 當「文字色」呈現，
+ * 1em 見方、隨內文顏色（light / dark / 列印皆正確；黑底 <img> 在 dark 會看不見）。
+ * 用法：<span class="glyph" style="--g:url('/lib/Typeface/svgs/T022132.svg')" role="img" aria-label="缺字 T022132"></span> */
+.markdown-body .glyph {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.12em;
+  background-color: currentColor;
+  -webkit-mask: var(--g) center / contain no-repeat;
+  mask: var(--g) center / contain no-repeat;
+}
+
+/* 不斷行群組：把「不想被拆行」的字＋缺字包起來（例：音譯詞 摩訶[缺字]尼），避免行尾被拆。
+ * <span class="nowrap">摩訶<span class="glyph" style="--g:url('…T022132.svg')"></span>尼</span> */
+.markdown-body .nowrap { white-space: nowrap; }
+
 .markdown-body .note {
   display: inline-block;
   font-size: 0.7em;
@@ -111,6 +128,11 @@
   /* 底色一律白：所有子元素去底（程式碼 / 表頭 / 斑馬列 / highlight.js 皆轉白） */
   .markdown-body * {
     background: transparent !important;
+  }
+
+  /* 例外：缺字 .glyph 以 background-color + mask 成形，去底會讓整字消失 → 還原為文字色（列印＝黑） */
+  .markdown-body .glyph {
+    background-color: currentColor !important;
   }
 
   /* 互動元素（複製鈕）列印時隱藏 */
