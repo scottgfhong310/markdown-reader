@@ -10,6 +10,8 @@
 - 🖨️ **印刷** — 縦 / 横、印刷時は白地に黒字
 - ✨ **整形トグル** — 仏典向けの文体整形（`MdFormater`）の適用 / 原文表示を切替
 - 🗂️ ファイル一覧サイドバー、原本ダウンロード、表示クリア、フォルダ消去
+- 📰 **読書スタイルと印刷** — GitHub ↔ Newsprint（新聞）スキン、印刷フォント拡大、ページ分割の**設定パネル**（表/リストを分割しない、H1 で改ページ、小ブロック/表の行の分割を許可）
+- 📐 **コンテンツ版型** — `.md` 内で使える HTML class：`.siddham`（字形＋ローマ字）、`.glyph`（欠字 SVG）、`.note`、`.right-table-wrap`、`.no-print`、`.nowrap`
 
 > フロントエンドのライブラリ（zero-md, Materialize, jQuery, Lodash, github-markdown-css, highlight.js）は CDN から読み込みます。バンドルやビルドは不要です。
 

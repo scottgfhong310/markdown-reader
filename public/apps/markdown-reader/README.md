@@ -66,8 +66,10 @@
 |---|---|
 | `<div class="no-print">…</div>` / `<span class="no-print">…</span>` | 螢幕可讀、**列印隱藏**（區塊用法前後留空行） |
 | `<span class="siddham" data-latin="oṃ">𑖌𑖼</span>` | 悉曇字形＋括號讀音（拉丁轉寫，需 Google Fonts 字型） |
+| `<span class="glyph" style="--g:url('/lib/Typeface/svgs/T….svg')"></span>` | 缺字以 SVG 替代，隨內文色（light/dark/列印皆正確）；字型在 `/lib/Typeface/svgs/`（僅 InProgress） |
 | `<span class="note">…</span>` | 行內小註 |
 | `<div class="right-table-wrap"><table>…</table></div>` | 序號（左大字）＋說明（右對齊）無框表 |
+| `<span class="nowrap">摩訶<span class="glyph" …></span>尼</span>` | 群組不斷行（音譯詞＋缺字不被拆到下一行） |
 
 ---
 

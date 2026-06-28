@@ -10,6 +10,8 @@
 - 🖨️ **列印** — 直向 / 橫向切換，列印時強制白底黑字
 - ✨ **文體格式化 toggle** — 可選擇套用佛典文體格式化（`MdFormater`）或顯示原文
 - 🗂️ 多檔側欄清單、下載原始檔、清除畫面、清空資料夾
+- 📰 **閱讀風格與列印** — GitHub ↔ 報紙（Newsprint）閱讀皮膚、列印字級放大，以及列印分頁**設定面板**（表格/清單不跨頁、H1 換頁、放寬小區塊/表格列跨頁）
+- 📐 **內容版型** — 可在 `.md` 內使用的 HTML class：`.siddham`（字形＋拉丁轉寫）、`.glyph`（缺字 SVG）、`.note`、`.right-table-wrap`、`.no-print`、`.nowrap`
 
 > 第三方前端庫（zero-md、Materialize、jQuery、Lodash、github-markdown-css、highlight.js）皆由 CDN 載入，無需打包或建置步驟。
 

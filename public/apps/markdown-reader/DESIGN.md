@@ -120,8 +120,10 @@ side tool `auto_fix_high` toggle。以動態 `import('/lib/adp-col/mdFormater.js
 ### 5.12 內容版型 class（viewer.css，與主題無關，自適應 light/dark × github/newsprint）
 - `.right-table-wrap`：序號（左大字）＋說明（右對齊）的無框表。
 - `.siddham`：悉曇字形，`::after` 以 `attr(data-latin)` 在字形後接括號讀音（灰色斜體）。
+- `.glyph`：缺字以 SVG（`/lib/Typeface/svgs/`）經 `mask` + `background-color: currentColor` 當「文字色」呈現，1em 見方、隨內文色（light/dark 皆正確）。列印另有去底例外（`@media print` 還原 `background-color` 否則會消失）。
 - `.note`：行內小註（小字）。
 - `.no-print` / `.screen-only`：螢幕顯示、列印隱藏。
+- `.nowrap`：群組不斷行（把音譯詞＋缺字包起來，避免行尾被拆）。
 
 ### 5.13 渲染韌性
 zero-md 以 MutationObserver 觀察 markdown slot；設完 `textContent` 後**讓出一個 macrotask** 再 `render()`，否則會讀到舊內容。`render()` 冷啟動時 promise 偶爾不 resolve（內部等外部 CDN 樣式 `<link>` 的 load）；控制器以 **timeout race 重試**，直到某次 render 回報 `body:true`（不能只看 `.markdown-body` 非空——切檔時舊內容仍在會誤判成功）。
