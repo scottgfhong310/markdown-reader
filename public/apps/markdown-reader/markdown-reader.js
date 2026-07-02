@@ -504,7 +504,7 @@
         state.text = '';
         return renderText(I18n.t('md.loadFail', { n: name, e: String(err) }));
       })
-      .then(function () { hideLoading(); });   // 成功或失敗都收起 loading
+      .then(function () { hideLoading(); window.scrollTo(0, 0); });   // 收起 loading，並回到頁面最上方
   }
 
   function markActive(name) {
