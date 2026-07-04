@@ -89,14 +89,14 @@ const GITHUB_DIR = (function () {
   return path.resolve(__dirname, '..', '..', 'GitHub');          // 後備（原行為）
 })();
 const MD_RE = /\.(md|markdown|mdown|mkd|mkdn|mdwn|mdtxt|text|txt)$/i;
-const SKIP_DIRS = new Set(['node_modules', '.git', '.bak', '.vscode', '.claude', 'dist', 'coverage']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.bak', '.vscode', '.claude', 'dist', 'coverage', '__pycache__', 'venv']);
 
 function withinDir(baseDir, abs) {
   return abs === baseDir || abs.startsWith(baseDir + path.sep);
 }
 
-// 遞迴列 GitHub/ 下的 .md（跳過 node_modules/.git/隱藏夾）；回相對 GITHUB_DIR 的 posix 路徑
-async function walkMd(dir, out) {
+// 遞迴列 .md（跳過 node_modules/.git/隱藏夾）；回相對 baseDir 的 posix 路徑
+async function walkMd(dir, out, baseDir) {
   let entries;
   try { entries = await fs.readdir(dir, { withFileTypes: true }); }
   catch (e) { if (e.code === 'ENOENT') return; throw e; }
@@ -104,10 +104,10 @@ async function walkMd(dir, out) {
     if (ent.name[0] === '.' || SKIP_DIRS.has(ent.name)) continue;
     const abs = path.join(dir, ent.name);
     if (ent.isDirectory()) {
-      await walkMd(abs, out);
+      await walkMd(abs, out, baseDir);
     } else if (ent.isFile() && MD_RE.test(ent.name)) {
       const stat = await fs.stat(abs);
-      out.push({ path: path.relative(GITHUB_DIR, abs).split(path.sep).join('/'), size: stat.size, mtime: stat.mtimeMs });
+      out.push({ path: path.relative(baseDir, abs).split(path.sep).join('/'), size: stat.size, mtime: stat.mtimeMs });
     }
   }
 }
@@ -126,6 +126,8 @@ function sanitizeMdRel(p) {
 
 // nodeapp 根（GitHub 的上一層）：只列「直接放在 nodeapp/ 下」的 .md，不遞迴其子專案
 const NODEAPP_DIR = path.resolve(GITHUB_DIR, '..');
+// txf-neo：與 nodeapp 同層的專案根，整棵遞迴（比照 GitHub）；不存在時回空清單
+const TXF_DIR = path.resolve(NODEAPP_DIR, '..', 'txf-neo');
 
 async function listNodeappMd() {
   const out = [];
@@ -141,28 +143,33 @@ async function listNodeappMd() {
   return out;
 }
 
-// GET /api/markdown-reader/github-list — 列 nodeapp/GitHub 下所有 .md ＋ nodeapp 頂層 .md
+// GET /api/markdown-reader/github-list — 列 nodeapp/GitHub 全部 ＋ nodeapp 頂層 ＋ txf-neo 全部
 router.get('/github-list', async (req, res) => {
   try {
     const files = [];
-    await walkMd(GITHUB_DIR, files);
+    await walkMd(GITHUB_DIR, files, GITHUB_DIR);
     files.sort((a, b) => a.path.localeCompare(b.path));
     const nodeappFiles = await listNodeappMd();
-    return res.json({ ok: true, files, nodeappFiles });
+    const txfFiles = [];
+    await walkMd(TXF_DIR, txfFiles, TXF_DIR);
+    txfFiles.sort((a, b) => a.path.localeCompare(b.path));
+    return res.json({ ok: true, files, nodeappFiles, txfFiles });
   } catch (err) {
     console.error('[markdown-reader] GET /github-list failed:', err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// GET /api/markdown-reader/github-file?path=<rel>[&root=nodeapp] — 讀單一 .md（回純文字）
-// root=nodeapp 時 path 限單一檔名（nodeapp 頂層檔）；預設 root＝GitHub/。
+// GET /api/markdown-reader/github-file?path=<rel>[&root=nodeapp|txf-neo] — 讀單一 .md（回純文字）
+// root=nodeapp 時 path 限單一檔名（nodeapp 頂層檔）；root=txf-neo 相對 txf-neo/；預設 root＝GitHub/。
 router.get('/github-file', async (req, res) => {
   const rel = sanitizeMdRel(req.query.path);
   if (!rel) return res.status(400).json({ ok: false, error: '不允許的路徑' });
-  const isNodeapp = req.query.root === 'nodeapp';
+  const root = req.query.root || '';
+  if (root && root !== 'nodeapp' && root !== 'txf-neo') return res.status(400).json({ ok: false, error: '不允許的 root' });
+  const isNodeapp = root === 'nodeapp';
   if (isNodeapp && rel.indexOf('/') >= 0) return res.status(400).json({ ok: false, error: '不允許的路徑' });
-  const baseDir = isNodeapp ? NODEAPP_DIR : GITHUB_DIR;
+  const baseDir = isNodeapp ? NODEAPP_DIR : (root === 'txf-neo' ? TXF_DIR : GITHUB_DIR);
   const abs = path.join(baseDir, rel);
   if (!withinDir(baseDir, abs)) return res.status(400).json({ ok: false, error: '路徑越界' });
   try {

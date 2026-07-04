@@ -314,27 +314,35 @@
   }
 
   var NODEAPP_PATH = '@nodeapp';   // 頂層 nodeapp 容器節點的 sentinel 路徑（非真實資料夾）
+  var TXF_PATH = '@txf';           // txf-neo 根節點的 sentinel 前綴（鍵＝'@txf' 或 '@txf/<rel>'）
 
-  // 由各 dirname 建巢狀樹（補中間層節點），再包進 nodeapp → GitHub 兩層容器
+  // 由各 dirname 建巢狀樹（補中間層節點）：nodeapp → GitHub 容器 ＋ 同層 txf-neo（有內容才顯示）
   function buildGithubForest() {
-    var repos = { children: {} };   // 相對 GitHub/ 的 repo 樹
     githubNodeIndex = {};
-    Object.keys(githubTree).forEach(function (folder) {
-      if (folder === '') return;
-      var segs = folder.split('/'), node = repos, acc = '';
+    function makeNode(name, pathKey) { var n = { name: name, path: pathKey, children: {} }; githubNodeIndex[pathKey] = n; return n; }
+    // 通用插入：keyPrefix＝節點 path 前綴（GitHub 相對＝''、txf＝'@txf'）
+    function insert(rootNode, keyPrefix, relFolder) {
+      var segs = relFolder.split('/'), node = rootNode, acc = keyPrefix;
       for (var i = 0; i < segs.length; i++) {
         acc = acc ? acc + '/' + segs[i] : segs[i];
-        if (!node.children[segs[i]]) { node.children[segs[i]] = { name: segs[i], path: acc, children: {} }; githubNodeIndex[acc] = node.children[segs[i]]; }
+        if (!node.children[segs[i]]) node.children[segs[i]] = makeNode(segs[i], acc);
         node = node.children[segs[i]];
       }
+    }
+    var githubNode = makeNode('GitHub', '');
+    var txfNode = makeNode('txf-neo', TXF_PATH);
+    Object.keys(githubTree).forEach(function (folder) {
+      if (folder === '' || folder === NODEAPP_PATH || folder === TXF_PATH) return;
+      if (folder.indexOf(TXF_PATH + '/') === 0) insert(txfNode, TXF_PATH, folder.slice(TXF_PATH.length + 1));
+      else if (folder.charAt(0) !== '@') insert(githubNode, '', folder);
     });
-    // GitHub 節點：path '' ＝內容根（直屬檔＝githubTree['']），children＝各 repo
-    var githubNode = { name: 'GitHub', path: '', children: repos.children };
-    githubNodeIndex[''] = githubNode;
-    // nodeapp 節點：容器，包住 GitHub
-    var nodeappNode = { name: 'nodeapp', path: NODEAPP_PATH, children: { 'GitHub': githubNode } };
-    githubNodeIndex[NODEAPP_PATH] = nodeappNode;
+    var nodeappNode = makeNode('nodeapp', NODEAPP_PATH);
+    nodeappNode.children['GitHub'] = githubNode;
     githubForest = { children: { 'nodeapp': nodeappNode } };
+    // txf-neo 掛在與 nodeapp 同層；沒掃到任何 .md 時不顯示（clone 到別台機器不會出現空節點）
+    if ((githubTree[TXF_PATH] || []).length || Object.keys(txfNode.children).length) {
+      githubForest.children['txf-neo'] = txfNode;
+    }
   }
 
   function nodeHasKids(path) { var n = githubNodeIndex[path]; return !!(n && Object.keys(n.children).length); }
@@ -348,7 +356,7 @@
     var showSet = null, forceExpand = false;
     if (q) {
       forceExpand = true; showSet = {};
-      showSet[NODEAPP_PATH] = true; showSet[''] = true;   // 永遠保留 nodeapp / GitHub 兩層
+      showSet[NODEAPP_PATH] = true; showSet[''] = true; showSet[TXF_PATH] = true;   // 頂層容器永遠保留
       Object.keys(githubTree).forEach(function (folder) {
         if (folder === '' || folder.toLowerCase().indexOf(q) < 0) return;
         var segs = folder.split('/'), acc = '';
@@ -389,7 +397,12 @@
 
   // 只展開「祖先」讓選取項看得見；不動選取項自身的展開狀態（名稱點擊的收合才不會被蓋掉）
   function expandGithubAncestors(folder) {
-    if (folder === NODEAPP_PATH) return;      // nodeapp 已是最上層
+    if (folder === NODEAPP_PATH || folder === TXF_PATH) return;   // 已是最上層
+    if (folder.indexOf(TXF_PATH + '/') === 0) {                   // txf 子層：'@txf' 起的沿途祖先
+      var tsegs = folder.split('/'), tacc = '';
+      for (var t = 0; t < tsegs.length - 1; t++) { tacc = tacc ? tacc + '/' + tsegs[t] : tsegs[t]; githubExpanded[tacc] = true; }
+      return;
+    }
     githubExpanded[NODEAPP_PATH] = true;
     if (folder === '') return;                // GitHub 節點的上層只有 nodeapp
     githubExpanded[''] = true;
@@ -431,17 +444,27 @@
     if (inst) inst.open();
     L.listGithub().then(function (d) {
       buildGithubTree(d.files || []);
-      buildGithubForest();
       // nodeapp 頂層 .md 掛在 nodeapp 節點（root:'nodeapp' → 開檔走 root=nodeapp）
       githubTree[NODEAPP_PATH] = (d.nodeappFiles || []).map(function (f) {
         return { path: f.name, name: f.name, size: f.size, root: 'nodeapp' };
       });
+      // txf-neo 檔案：鍵加 '@txf' 前綴（避免與 GitHub 相對路徑相撞）；開檔走 root=txf-neo
+      (d.txfFiles || []).forEach(function (f) {
+        var i = f.path.lastIndexOf('/');
+        var key = i < 0 ? TXF_PATH : TXF_PATH + '/' + f.path.slice(0, i);
+        var name = i < 0 ? f.path : f.path.slice(i + 1);
+        (githubTree[key] = githubTree[key] || []).push({ path: f.path, name: name, size: f.size, root: 'txf-neo' });
+      });
+      buildGithubForest();
       // 保留上次的展開/選取狀態；首次載入才給預設（展開 nodeapp / GitHub）
-      if (!Object.keys(githubExpanded).length) { githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true; }
-      // 若 viewer 正開著某份 GitHub 檔 → 定位到它所在的資料夾
+      if (!Object.keys(githubExpanded).length) { githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true; githubExpanded[TXF_PATH] = true; }
+      // 若 viewer 正開著某份 GitHub / nodeapp / txf 檔 → 定位到它所在的資料夾
       if (githubCurrentPath != null) {
-        var cf = githubCurrentRoot === 'nodeapp' ? NODEAPP_PATH
-          : (githubCurrentPath.indexOf('/') < 0 ? '' : githubCurrentPath.slice(0, githubCurrentPath.lastIndexOf('/')));
+        var cf;
+        var cdir = githubCurrentPath.indexOf('/') < 0 ? '' : githubCurrentPath.slice(0, githubCurrentPath.lastIndexOf('/'));
+        if (githubCurrentRoot === 'nodeapp') cf = NODEAPP_PATH;
+        else if (githubCurrentRoot === 'txf-neo') cf = cdir ? TXF_PATH + '/' + cdir : TXF_PATH;
+        else cf = cdir;
         if (githubTree[cf]) githubActiveFolder = cf;
       }
       applyGithubFilter();

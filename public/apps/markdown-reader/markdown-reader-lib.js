@@ -151,7 +151,7 @@
           return r.json();
         })
         .then(function (d) {
-          return { files: (d && d.files) || [], nodeappFiles: (d && d.nodeappFiles) || [] };
+          return { files: (d && d.files) || [], nodeappFiles: (d && d.nodeappFiles) || [], txfFiles: (d && d.txfFiles) || [] };
         });
     },
 
