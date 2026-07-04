@@ -34,6 +34,8 @@
   var CLEAR_API = '/api/markdown-reader/clear';
   var STATIC_BASE = '/upload/' + FOLDER + '/';
   var CONFIG_URL = '/apps/' + FOLDER + '/config.json';
+  var GITHUB_LIST_API = '/api/markdown-reader/github-list';   // 列 nodeapp/GitHub 下的 .md
+  var GITHUB_FILE_API = '/api/markdown-reader/github-file';   // 讀單一 GitHub .md
 
   // app 設定的後備預設（config.json 缺檔 / 壞檔 / 缺鍵時使用）。
   // print.keepTableTogether / keepListTogether：列印時是否「整塊絕不跨頁切」（預設否＝可流動）。
@@ -137,6 +139,29 @@
         .then(function (d) {
           if (!d || !d.ok) throw new Error((d && d.error) || '清空失敗');
           return d;
+        });
+    },
+
+    /** 列出 nodeapp/GitHub 下的 .md ＋ nodeapp 頂層 .md
+     *  → { files:[{ path, size, mtime }], nodeappFiles:[{ name, size, mtime }] } */
+    listGithub: function () {
+      return fetch(bust(GITHUB_LIST_API), { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('GitHub 清單載入失敗 (' + r.status + ')');
+          return r.json();
+        })
+        .then(function (d) {
+          return { files: (d && d.files) || [], nodeappFiles: (d && d.nodeappFiles) || [] };
+        });
+    },
+
+    /** 讀取單一 GitHub .md 的文字內容（rel＝相對 GitHub/ 的路徑；root='nodeapp' 時為 nodeapp 頂層檔名） */
+    fetchGithubText: function (rel, root) {
+      var url = GITHUB_FILE_API + '?path=' + encodeURIComponent(rel) + (root ? '&root=' + encodeURIComponent(root) : '');
+      return fetch(bust(url), { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('讀取失敗 (' + r.status + ')');
+          return r.text();
         });
     },
 

@@ -7,6 +7,7 @@
 /* ===== 主題變數（light / dark 由 <html data-theme> 切換） ===== */
 :root,
 [data-theme="dark"] {
+  color-scheme: dark;   /* 原生 UI（卷軸、表單控件）跟隨主題——通用，含 modal / 側欄 / shadow DOM 內卷軸 */
   --bg: #0f1115;
   --surface: #161a22;
   --surface-2: #1b2030;
@@ -22,6 +23,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   --bg: #f6f8fa;
   --surface: #ffffff;
   --surface-2: #eef1f5;

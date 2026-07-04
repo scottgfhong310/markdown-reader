@@ -292,6 +292,169 @@
     if (inst) inst.open();
   }
 
+  /* ---------- 瀏覽 nodeapp/GitHub 下的 .md（唯讀） ---------- */
+
+  var githubTree = {};        // { dirname: [{ path, name, size }] }（各資料夾直屬的 .md；'' = 根）
+  var githubForest = null;    // 巢狀樹（含中間層資料夾）：{ children: { name: node } }
+  var githubNodeIndex = {};   // { path: node }
+  var githubExpanded = {};    // { path: true } 展開狀態
+  var githubActiveFolder = null;
+
+  // 分組成 { dirname: [檔案] }
+  function buildGithubTree(files) {
+    githubTree = {};
+    files.forEach(function (f) {
+      var i = f.path.lastIndexOf('/');
+      var folder = i < 0 ? '' : f.path.slice(0, i);
+      var name = i < 0 ? f.path : f.path.slice(i + 1);
+      (githubTree[folder] = githubTree[folder] || []).push({ path: f.path, name: name, size: f.size });
+    });
+  }
+
+  var NODEAPP_PATH = '@nodeapp';   // 頂層 nodeapp 容器節點的 sentinel 路徑（非真實資料夾）
+
+  // 由各 dirname 建巢狀樹（補中間層節點），再包進 nodeapp → GitHub 兩層容器
+  function buildGithubForest() {
+    var repos = { children: {} };   // 相對 GitHub/ 的 repo 樹
+    githubNodeIndex = {};
+    Object.keys(githubTree).forEach(function (folder) {
+      if (folder === '') return;
+      var segs = folder.split('/'), node = repos, acc = '';
+      for (var i = 0; i < segs.length; i++) {
+        acc = acc ? acc + '/' + segs[i] : segs[i];
+        if (!node.children[segs[i]]) { node.children[segs[i]] = { name: segs[i], path: acc, children: {} }; githubNodeIndex[acc] = node.children[segs[i]]; }
+        node = node.children[segs[i]];
+      }
+    });
+    // GitHub 節點：path '' ＝內容根（直屬檔＝githubTree['']），children＝各 repo
+    var githubNode = { name: 'GitHub', path: '', children: repos.children };
+    githubNodeIndex[''] = githubNode;
+    // nodeapp 節點：容器，包住 GitHub
+    var nodeappNode = { name: 'nodeapp', path: NODEAPP_PATH, children: { 'GitHub': githubNode } };
+    githubNodeIndex[NODEAPP_PATH] = nodeappNode;
+    githubForest = { children: { 'nodeapp': nodeappNode } };
+  }
+
+  function nodeHasKids(path) { var n = githubNodeIndex[path]; return !!(n && Object.keys(n.children).length); }
+
+  // 渲染資料夾樹（縮排 + 展開/收合；篩選時自動展開命中分支）
+  function renderGithubFolders() {
+    var el = document.getElementById('github-folders');
+    if (!el) return;
+    var fEl = document.getElementById('github-filter');
+    var q = String(fEl ? fEl.value : '').trim().toLowerCase();
+    var showSet = null, forceExpand = false;
+    if (q) {
+      forceExpand = true; showSet = {};
+      showSet[NODEAPP_PATH] = true; showSet[''] = true;   // 永遠保留 nodeapp / GitHub 兩層
+      Object.keys(githubTree).forEach(function (folder) {
+        if (folder === '' || folder.toLowerCase().indexOf(q) < 0) return;
+        var segs = folder.split('/'), acc = '';
+        for (var i = 0; i < segs.length; i++) { acc = acc ? acc + '/' + segs[i] : segs[i]; showSet[acc] = true; }
+      });
+    }
+    var out = [];
+    (function walk(node, depth) {
+      Object.keys(node.children).sort(function (a, b) { return a.localeCompare(b); }).forEach(function (name) {
+        var c = node.children[name];
+        if (showSet && !showSet[c.path]) return;
+        var hasKids = Object.keys(c.children).length > 0;
+        var expanded = forceExpand || githubExpanded[c.path];
+        var count = (githubTree[c.path] || []).length;
+        out.push('<li><a href="#!" class="github-folder' + (c.path === githubActiveFolder ? ' active' : '') +
+          '" data-folder="' + _.escape(c.path) + '" style="padding-left:' + (8 + depth * 15) + 'px;">' +
+          '<i class="material-icons github-caret">' + (hasKids ? (expanded ? 'expand_more' : 'chevron_right') : '') + '</i>' +
+          '<i class="material-icons">folder</i><span>' + _.escape(name) + '</span>' +
+          (count ? '<span class="github-count">' + count + '</span>' : '') + '</a></li>');
+        if (hasKids && expanded) walk(c, depth + 1);
+      });
+    })(githubForest, 0);
+    el.innerHTML = out.length ? out.join('') : '<li class="github-empty">' + I18n.t('github.empty') + '</li>';
+  }
+
+  function renderGithubFiles(files) {
+    var el = document.getElementById('github-files');
+    if (!el) return;
+    if (!files || !files.length) { el.innerHTML = '<li class="github-empty">' + I18n.t('github.pick') + '</li>'; return; }
+    el.innerHTML = files.map(function (f) {
+      return '<li><a href="#!" class="github-item" data-path="' + _.escape(f.path) + '"' +
+        (f.root ? ' data-root="' + _.escape(f.root) + '"' : '') + '>' +
+        '<i class="material-icons">description</i><span>' + _.escape(f.name) + '</span>' +
+        '<span class="github-size">' + L.formatSize(f.size) + '</span></a></li>';
+    }).join('');
+  }
+
+  function expandGithubAncestors(folder) {
+    githubExpanded[NODEAPP_PATH] = true;   // 容器層 nodeapp / GitHub 一律展開，選取才看得見
+    githubExpanded[''] = true;
+    if (folder === '' || folder === NODEAPP_PATH) return;
+    var segs = folder.split('/'), acc = '';
+    for (var i = 0; i < segs.length - 1; i++) { acc = acc ? acc + '/' + segs[i] : segs[i]; githubExpanded[acc] = true; }
+  }
+
+  function selectGithubFolder(folder) {
+    githubActiveFolder = folder;
+    expandGithubAncestors(folder);
+    renderGithubFolders();
+    renderGithubFiles(githubTree[folder] || []);
+  }
+
+  function toggleGithubExpand(folder) {
+    githubExpanded[folder] = !githubExpanded[folder];
+    renderGithubFolders();
+  }
+
+  // 篩選後重繪樹，並自動選第一個（或保留目前）有檔資料夾
+  function applyGithubFilter() {
+    var fEl = document.getElementById('github-filter');
+    var q = String(fEl ? fEl.value : '').trim().toLowerCase();
+    var candidates = Object.keys(githubTree).sort();
+    if (q) candidates = candidates.filter(function (f) { return f !== '' && f.toLowerCase().indexOf(q) >= 0; });
+    var pick = (githubActiveFolder != null && candidates.indexOf(githubActiveFolder) >= 0) ? githubActiveFolder : candidates[0];
+    if (pick != null) selectGithubFolder(pick);
+    else { renderGithubFolders(); renderGithubFiles([]); }
+  }
+
+  function openGithubModal() {
+    var el = document.getElementById('github-modal');
+    if (!el) return;
+    var inst = M.Modal.getInstance(el) || M.Modal.init(el);
+    var fol = document.getElementById('github-folders');
+    var fil = document.getElementById('github-files');
+    if (fol) fol.innerHTML = '<li class="github-loading">' + I18n.t('loading') + '</li>';
+    if (fil) fil.innerHTML = '';
+    if (inst) inst.open();
+    L.listGithub().then(function (d) {
+      buildGithubTree(d.files || []);
+      buildGithubForest();
+      // nodeapp 頂層 .md 掛在 nodeapp 節點（root:'nodeapp' → 開檔走 root=nodeapp）
+      githubTree[NODEAPP_PATH] = (d.nodeappFiles || []).map(function (f) {
+        return { path: f.name, name: f.name, size: f.size, root: 'nodeapp' };
+      });
+      githubActiveFolder = null;
+      githubExpanded = {};
+      githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true;   // 預設展開 nodeapp / GitHub
+      applyGithubFilter();
+    }).catch(function (err) {
+      if (fol) fol.innerHTML = '<li class="github-empty">' + _.escape(I18n.t('github.fail', { m: err.message })) + '</li>';
+    });
+  }
+
+  // 開啟一份 GitHub / nodeapp 頂層 .md（唯讀；不進上傳清單、不高亮側欄）
+  function openGithub(rel, root) {
+    if (!rel) return Promise.resolve();
+    state.current = rel;
+    document.title = rel + ' | ' + I18n.t('title.suffix');
+    setPrintOptions();
+    $('#side-nav li').removeClass('active');
+    showViewer(true);
+    showLoading();
+    return L.fetchGithubText(rel, root)
+      .then(function (text) { state.text = text; return renderCurrentContent(); })
+      .catch(function (err) { state.text = ''; return renderText(I18n.t('md.loadFail', { n: rel, e: String(err) })); })
+      .then(function () { hideLoading(); window.scrollTo(0, 0); });
+  }
+
   /* ---------- 語系（i18n：透過 I18n 引擎，預設 zh-Hant，支援 zh-Hant / en / ja） ---------- */
 
   // 語言切換後，重繪由 JS 產生的動態內容（靜態文字 / 標題由 I18n.apply 處理）
@@ -579,8 +742,9 @@
       return;
     }
     var text = state.text != null ? state.text : '';
-    L.downloadText(state.current, text);
-    M.toast({ html: I18n.t('toast.downloaded', { n: state.current }), classes: 'teal' });
+    var name = String(state.current).split('/').pop();   // GitHub 檔可能含路徑，下載取檔名
+    L.downloadText(name, text);
+    M.toast({ html: I18n.t('toast.downloaded', { n: name }), classes: 'teal' });
   }
 
   // 清除頁面上目前顯示的內容（回到初始空狀態），但不刪除伺服器上的檔案
@@ -685,6 +849,29 @@
       var cb = document.getElementById(PRINT_CBOX[k]);
       if (cb) cb.addEventListener('change', function () { setPrintOption(k, cb.checked); });
     });
+    // GitHub .md 瀏覽：icon 開面板、清單項目開檔、篩選
+    var ghBtn = document.getElementById('setting-github');
+    if (ghBtn) ghBtn.addEventListener('click', openGithubModal);
+    $(document).on('click', '#github-folders a.github-folder', function (e) {
+      e.preventDefault();
+      var folder = String($(this).attr('data-folder'));
+      if ($(e.target).closest('.github-caret').length) {
+        toggleGithubExpand(folder);   // 點三角＝展開/收合
+      } else {
+        if (nodeHasKids(folder) && !githubExpanded[folder]) githubExpanded[folder] = true;   // 點名稱＝選取（順便展開）
+        selectGithubFolder(folder);
+      }
+    });
+    $(document).on('click', '#github-files a.github-item', function (e) {
+      e.preventDefault();
+      var p = String($(this).data('path'));
+      var root = $(this).attr('data-root') || '';
+      var gm = M.Modal.getInstance(document.getElementById('github-modal'));
+      if (gm) gm.close();
+      openGithub(p, root);
+    });
+    var ghFilter = document.getElementById('github-filter');
+    if (ghFilter) ghFilter.addEventListener('input', applyGithubFilter);
     document.getElementById('setting-clear-page').addEventListener('click', clearPage);
     document.getElementById('setting-clear').addEventListener('click', clearFolder);
 
@@ -711,6 +898,8 @@
 
     var cfgModal = document.getElementById('config-modal');
     if (cfgModal) M.Modal.init(cfgModal);
+    var ghModal = document.getElementById('github-modal');
+    if (ghModal) M.Modal.init(ghModal);
 
     var saved = 'dark';
     try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}

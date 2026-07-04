@@ -18,6 +18,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');   // GITHUB_DIR 解析用（existsSync）
 
 const router = express.Router();
 
@@ -69,6 +70,107 @@ router.post('/clear', async (req, res) => {
     return res.json({ ok: true, removed: removed.length, files: removed });
   } catch (err) {
     console.error('[markdown-reader] POST /clear failed:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ===== 瀏覽 nodeapp/GitHub 下的 .md（唯讀） =====
+// 根目錄解析：由本檔往上找名為 GitHub 的資料夾（含「自己就在 GitHub 內」的情況），
+// 讓 InProgress（nodeapp/InProgress/routes → nodeapp/GitHub）與獨立 bundle
+// （nodeapp/GitHub/markdown-reader/routes → nodeapp/GitHub）兩種佈局都解析正確。
+const GITHUB_DIR = (function () {
+  let d = __dirname;
+  for (let i = 0; i < 6; i++) {
+    d = path.dirname(d);
+    if (path.basename(d) === 'GitHub') return d;                 // bundle：repo 本身就在 GitHub/ 下
+    const cand = path.join(d, 'GitHub');
+    if (fsSync.existsSync(cand)) return cand;                    // InProgress：nodeapp/GitHub 為兄弟層
+  }
+  return path.resolve(__dirname, '..', '..', 'GitHub');          // 後備（原行為）
+})();
+const MD_RE = /\.(md|markdown|mdown|mkd|mkdn|mdwn|mdtxt|text|txt)$/i;
+const SKIP_DIRS = new Set(['node_modules', '.git', '.bak', '.vscode', '.claude', 'dist', 'coverage']);
+
+function withinDir(baseDir, abs) {
+  return abs === baseDir || abs.startsWith(baseDir + path.sep);
+}
+
+// 遞迴列 GitHub/ 下的 .md（跳過 node_modules/.git/隱藏夾）；回相對 GITHUB_DIR 的 posix 路徑
+async function walkMd(dir, out) {
+  let entries;
+  try { entries = await fs.readdir(dir, { withFileTypes: true }); }
+  catch (e) { if (e.code === 'ENOENT') return; throw e; }
+  for (const ent of entries) {
+    if (ent.name[0] === '.' || SKIP_DIRS.has(ent.name)) continue;
+    const abs = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      await walkMd(abs, out);
+    } else if (ent.isFile() && MD_RE.test(ent.name)) {
+      const stat = await fs.stat(abs);
+      out.push({ path: path.relative(GITHUB_DIR, abs).split(path.sep).join('/'), size: stat.size, mtime: stat.mtimeMs });
+    }
+  }
+}
+
+// 相對路徑消毒：非空、每段非 . / .. / 隱藏、不含 \ \0、.md 白名單
+function sanitizeMdRel(p) {
+  let s = String(p == null ? '' : p).trim().replace(/^\/+/, '');
+  if (!s || /\0/.test(s)) return null;
+  const parts = s.split('/');
+  for (const seg of parts) {
+    if (!seg || seg === '.' || seg === '..' || seg[0] === '.' || /[\\]/.test(seg)) return null;
+  }
+  s = parts.join('/');
+  return MD_RE.test(s) ? s : null;
+}
+
+// nodeapp 根（GitHub 的上一層）：只列「直接放在 nodeapp/ 下」的 .md，不遞迴其子專案
+const NODEAPP_DIR = path.resolve(GITHUB_DIR, '..');
+
+async function listNodeappMd() {
+  const out = [];
+  let entries;
+  try { entries = await fs.readdir(NODEAPP_DIR, { withFileTypes: true }); }
+  catch (e) { if (e.code === 'ENOENT') return out; throw e; }
+  for (const ent of entries) {
+    if (!ent.isFile() || ent.name[0] === '.' || !MD_RE.test(ent.name)) continue;
+    const stat = await fs.stat(path.join(NODEAPP_DIR, ent.name));
+    out.push({ name: ent.name, size: stat.size, mtime: stat.mtimeMs });
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+// GET /api/markdown-reader/github-list — 列 nodeapp/GitHub 下所有 .md ＋ nodeapp 頂層 .md
+router.get('/github-list', async (req, res) => {
+  try {
+    const files = [];
+    await walkMd(GITHUB_DIR, files);
+    files.sort((a, b) => a.path.localeCompare(b.path));
+    const nodeappFiles = await listNodeappMd();
+    return res.json({ ok: true, files, nodeappFiles });
+  } catch (err) {
+    console.error('[markdown-reader] GET /github-list failed:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// GET /api/markdown-reader/github-file?path=<rel>[&root=nodeapp] — 讀單一 .md（回純文字）
+// root=nodeapp 時 path 限單一檔名（nodeapp 頂層檔）；預設 root＝GitHub/。
+router.get('/github-file', async (req, res) => {
+  const rel = sanitizeMdRel(req.query.path);
+  if (!rel) return res.status(400).json({ ok: false, error: '不允許的路徑' });
+  const isNodeapp = req.query.root === 'nodeapp';
+  if (isNodeapp && rel.indexOf('/') >= 0) return res.status(400).json({ ok: false, error: '不允許的路徑' });
+  const baseDir = isNodeapp ? NODEAPP_DIR : GITHUB_DIR;
+  const abs = path.join(baseDir, rel);
+  if (!withinDir(baseDir, abs)) return res.status(400).json({ ok: false, error: '路徑越界' });
+  try {
+    const text = await fs.readFile(abs, 'utf8');
+    return res.type('text/markdown; charset=utf-8').send(text);
+  } catch (err) {
+    if (err.code === 'ENOENT') return res.status(404).json({ ok: false, error: '檔案不存在' });
+    console.error('[markdown-reader] GET /github-file failed:', err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 });
