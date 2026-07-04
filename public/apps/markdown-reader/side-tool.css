@@ -189,6 +189,8 @@ body.sidenav-open #side-tools {
   color: var(--text);
 }
 #github-modal .github-item:hover { background: rgba(127, 127, 127, 0.14); }
+#github-modal .github-item.active { background: rgba(127, 127, 127, 0.18); color: var(--accent); }
+#github-modal .github-item.active .material-icons { color: var(--accent); }
 #github-modal .github-item .material-icons { font-size: 18px; color: var(--muted); flex: 0 0 auto; }
 #github-modal .github-item span:not(.github-size) { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #github-modal .github-size { flex: 0 0 auto; font-size: .75rem; color: var(--muted); }

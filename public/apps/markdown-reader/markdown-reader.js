@@ -299,6 +299,8 @@
   var githubNodeIndex = {};   // { path: node }
   var githubExpanded = {};    // { path: true } 展開狀態
   var githubActiveFolder = null;
+  var githubCurrentPath = null;   // 目前在 viewer 開啟的 GitHub 檔（重開面板時定位用）
+  var githubCurrentRoot = '';     // '' = GitHub/；'nodeapp' = nodeapp 頂層
 
   // 分組成 { dirname: [檔案] }
   function buildGithubTree(files) {
@@ -377,17 +379,20 @@
     if (!el) return;
     if (!files || !files.length) { el.innerHTML = '<li class="github-empty">' + I18n.t('github.pick') + '</li>'; return; }
     el.innerHTML = files.map(function (f) {
-      return '<li><a href="#!" class="github-item" data-path="' + _.escape(f.path) + '"' +
+      var isCur = f.path === githubCurrentPath && (f.root || '') === githubCurrentRoot;   // 目前開啟的檔 → 高亮
+      return '<li><a href="#!" class="github-item' + (isCur ? ' active' : '') + '" data-path="' + _.escape(f.path) + '"' +
         (f.root ? ' data-root="' + _.escape(f.root) + '"' : '') + '>' +
         '<i class="material-icons">description</i><span>' + _.escape(f.name) + '</span>' +
         '<span class="github-size">' + L.formatSize(f.size) + '</span></a></li>';
     }).join('');
   }
 
+  // 只展開「祖先」讓選取項看得見；不動選取項自身的展開狀態（名稱點擊的收合才不會被蓋掉）
   function expandGithubAncestors(folder) {
-    githubExpanded[NODEAPP_PATH] = true;   // 容器層 nodeapp / GitHub 一律展開，選取才看得見
+    if (folder === NODEAPP_PATH) return;      // nodeapp 已是最上層
+    githubExpanded[NODEAPP_PATH] = true;
+    if (folder === '') return;                // GitHub 節點的上層只有 nodeapp
     githubExpanded[''] = true;
-    if (folder === '' || folder === NODEAPP_PATH) return;
     var segs = folder.split('/'), acc = '';
     for (var i = 0; i < segs.length - 1; i++) { acc = acc ? acc + '/' + segs[i] : segs[i]; githubExpanded[acc] = true; }
   }
@@ -431,10 +436,20 @@
       githubTree[NODEAPP_PATH] = (d.nodeappFiles || []).map(function (f) {
         return { path: f.name, name: f.name, size: f.size, root: 'nodeapp' };
       });
-      githubActiveFolder = null;
-      githubExpanded = {};
-      githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true;   // 預設展開 nodeapp / GitHub
+      // 保留上次的展開/選取狀態；首次載入才給預設（展開 nodeapp / GitHub）
+      if (!Object.keys(githubExpanded).length) { githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true; }
+      // 若 viewer 正開著某份 GitHub 檔 → 定位到它所在的資料夾
+      if (githubCurrentPath != null) {
+        var cf = githubCurrentRoot === 'nodeapp' ? NODEAPP_PATH
+          : (githubCurrentPath.indexOf('/') < 0 ? '' : githubCurrentPath.slice(0, githubCurrentPath.lastIndexOf('/')));
+        if (githubTree[cf]) githubActiveFolder = cf;
+      }
       applyGithubFilter();
+      // 把選取的資料夾與檔案捲進可視範圍
+      var actFol = document.querySelector('#github-folders .github-folder.active');
+      if (actFol && actFol.scrollIntoView) actFol.scrollIntoView({ block: 'nearest' });
+      var actFile = document.querySelector('#github-files .github-item.active');
+      if (actFile && actFile.scrollIntoView) actFile.scrollIntoView({ block: 'nearest' });
     }).catch(function (err) {
       if (fol) fol.innerHTML = '<li class="github-empty">' + _.escape(I18n.t('github.fail', { m: err.message })) + '</li>';
     });
@@ -443,6 +458,8 @@
   // 開啟一份 GitHub / nodeapp 頂層 .md（唯讀；不進上傳清單、不高亮側欄）
   function openGithub(rel, root) {
     if (!rel) return Promise.resolve();
+    githubCurrentPath = rel;            // 記住目前開啟的 GitHub 檔（重開面板時定位）
+    githubCurrentRoot = root || '';
     state.current = rel;
     document.title = rel + ' | ' + I18n.t('title.suffix');
     setPrintOptions();
@@ -858,7 +875,7 @@
       if ($(e.target).closest('.github-caret').length) {
         toggleGithubExpand(folder);   // 點三角＝展開/收合
       } else {
-        if (nodeHasKids(folder) && !githubExpanded[folder]) githubExpanded[folder] = true;   // 點名稱＝選取（順便展開）
+        if (nodeHasKids(folder)) githubExpanded[folder] = !githubExpanded[folder];   // 點名稱＝選取＋展開/收合切換
         selectGithubFolder(folder);
       }
     });
