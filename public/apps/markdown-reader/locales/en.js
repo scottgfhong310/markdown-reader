@@ -46,6 +46,7 @@ I18n.register('en', {
   'toast.orientation': 'Print orientation: {o}',
   'toast.formatOn': 'Text formatting enabled',
   'toast.formatOff': 'Text formatting disabled (showing raw)',
+  'toast.lang': 'Switched to {name}',
   'toast.styleNewsprint': 'Switched to Newsprint reading style',
   'toast.styleGithub': 'Switched to GitHub reading style',
   'toast.uploaded': 'Uploaded: {n}',

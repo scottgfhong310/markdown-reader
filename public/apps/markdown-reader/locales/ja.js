@@ -46,6 +46,7 @@ I18n.register('ja', {
   'toast.orientation': '印刷方向：{o}',
   'toast.formatOn': '文体整形を有効化',
   'toast.formatOff': '文体整形を無効化（原文表示）',
+  'toast.lang': '{name} に切り替えました',
   'toast.styleNewsprint': '新聞紙スタイルに切り替えました',
   'toast.styleGithub': 'GitHub スタイルに切り替えました',
   'toast.uploaded': 'アップロード：{n}',

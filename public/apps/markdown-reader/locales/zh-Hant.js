@@ -46,6 +46,7 @@ I18n.register('zh-Hant', {
   'toast.orientation': '列印方向：{o}',
   'toast.formatOn': '已開啟文體格式化',
   'toast.formatOff': '已關閉文體格式化（顯示原文）',
+  'toast.lang': '已切換為 {name}',
   'toast.styleNewsprint': '已切換為報紙閱讀風',
   'toast.styleGithub': '已切換為 GitHub 閱讀風',
   'toast.uploaded': '已上傳：{n}',
