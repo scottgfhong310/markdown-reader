@@ -502,6 +502,7 @@
     updateFormatIcon();              // 格式化按鈕 title 依 state.format + 語系
     updatePrintScaleIcon();          // 列印字級放大鈕 title 依倍率 + 語系
     updateCopyTitles();              // 程式碼複製鈕 title 依語系
+    updatePastePreview();            // 貼上面板的「找不到標題」提示依語系
     renderSideNav(state.files);      // 「尚無檔案」訊息
     if (state.current) markActive(state.current);
     document.title = state.current
@@ -772,6 +773,64 @@
     chain.then(function () { return refreshFiles(lastName); });
   }
 
+  /* ---------- 貼上 Markdown 文字存檔 ---------- */
+  // 第一個標題＝檔名（lib 的 deriveFilename，輸入時即時預覽）；無標題擋下存檔。
+  // 存檔走既有上傳管線（文字包成 File → uploadFile），同名以 resolveCollision 加時間戳避開，
+  // 完成後 refreshFiles 直接開啟新檔。
+
+  var pasteSaving = false;   // 防連點重複送出
+
+  function updatePastePreview() {
+    var ta = document.getElementById('paste-text');
+    var nameEl = document.getElementById('paste-name');
+    var saveBtn = document.getElementById('paste-save');
+    if (!ta || !nameEl || !saveBtn) return;
+    var name = L.deriveFilename(ta.value);
+    nameEl.textContent = name || I18n.t('paste.noHeader');
+    nameEl.classList.toggle('no-header', !name);
+    saveBtn.classList.toggle('disabled', !name || pasteSaving);
+  }
+
+  function openPasteModal() {
+    var el = document.getElementById('paste-modal');
+    if (!el) return;
+    var inst = M.Modal.getInstance(el) || M.Modal.init(el);
+    updatePastePreview();
+    inst.open();
+    var ta = document.getElementById('paste-text');
+    if (ta) ta.focus();
+  }
+
+  function savePaste() {
+    if (pasteSaving) return;
+    var ta = document.getElementById('paste-text');
+    var text = ta ? ta.value : '';
+    var name = L.deriveFilename(text);
+    if (!name) {
+      M.toast({ html: I18n.t('toast.pasteNoHeader'), classes: 'orange' });
+      return;
+    }
+    pasteSaving = true;
+    updatePastePreview();
+    var finalName = name;   // 撞名解決後更新；catch 的 toast 也用它（報實際嘗試的檔名）
+    L.listFiles().then(function (files) {
+      finalName = L.resolveCollision(name, files.map(function (f) { return f.name; }));
+      var file = new File([text], finalName, { type: 'text/markdown' });
+      return L.uploadFile(file).then(function () {
+        M.toast({ html: I18n.t('toast.pasteSaved', { n: finalName }), classes: 'green' });
+        var inst = M.Modal.getInstance(document.getElementById('paste-modal'));
+        if (inst) inst.close();
+        if (ta) ta.value = '';
+        return refreshFiles(finalName);
+      });
+    }).catch(function (err) {
+      M.toast({ html: I18n.t('toast.uploadFail', { n: finalName, m: err.message }), classes: 'red' });
+    }).then(function () {
+      pasteSaving = false;
+      updatePastePreview();
+    });
+  }
+
   /* ---------- 下載 / 清空 ---------- */
 
   function downloadCurrent() {
@@ -887,6 +946,14 @@
       var cb = document.getElementById(PRINT_CBOX[k]);
       if (cb) cb.addEventListener('change', function () { setPrintOption(k, cb.checked); });
     });
+    // 貼上 Markdown 文字：icon 開面板、輸入即時預覽檔名、存檔並開啟
+    var pasteBtn = document.getElementById('setting-paste');
+    if (pasteBtn) pasteBtn.addEventListener('click', openPasteModal);
+    var pasteText = document.getElementById('paste-text');
+    // 大文件每鍵全文重掃很貴 → debounce；開面板/存檔/換語言仍直接呼叫 updatePastePreview
+    if (pasteText) pasteText.addEventListener('input', _.debounce(updatePastePreview, 150));
+    var pasteSave = document.getElementById('paste-save');
+    if (pasteSave) pasteSave.addEventListener('click', function (e) { e.preventDefault(); savePaste(); });
     // GitHub .md 瀏覽：icon 開面板、清單項目開檔、篩選
     var ghBtn = document.getElementById('setting-github');
     if (ghBtn) ghBtn.addEventListener('click', openGithubModal);
@@ -938,6 +1005,8 @@
     if (cfgModal) M.Modal.init(cfgModal);
     var ghModal = document.getElementById('github-modal');
     if (ghModal) M.Modal.init(ghModal);
+    var pModal = document.getElementById('paste-modal');
+    if (pModal) M.Modal.init(pModal);
 
     var saved = 'dark';
     try { saved = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}

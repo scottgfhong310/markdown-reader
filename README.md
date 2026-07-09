@@ -5,6 +5,7 @@
 A drag-and-drop single-page web app to **read and print Markdown**. It renders with [`zero-md`](https://github.com/zerodevx/zero-md), backed by a lightweight Express server for upload / list / clear.
 
 - 📥 **Drag & drop upload** — drop `.md` / `.txt` files anywhere on the page to upload and read; **same name overwrites**
+- 📝 **Paste to save** — paste raw Markdown text in a modal; the **first heading becomes the filename**, saved to `/upload/markdown-reader` and opened right away (a timestamp is appended on name clashes — nothing is overwritten; saving is blocked until the text has a heading)
 - 🌗 **Light / Dark** toggle (saved in localStorage)
 - 🌐 **Multilingual UI** — English / 繁體中文 / 日本語 (default English, saved in localStorage)
 - 🖨️ **Print** — portrait / landscape, forced black-on-white

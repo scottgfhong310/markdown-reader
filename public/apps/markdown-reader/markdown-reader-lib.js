@@ -16,6 +16,8 @@
  *   MarkdownReaderLib.FOLDER                  → 'markdown-reader'
  *   MarkdownReaderLib.fetchConfig()           → Promise<{print:{keepTableTogether,keepListTogether}}>  讀 config.json（缺檔回預設）
  *   MarkdownReaderLib.isReadable(name)        → boolean   是否為支援的 markdown / 文字副檔名
+ *   MarkdownReaderLib.deriveFilename(text)    → 'name.md' | null   以第一個標題推導檔名（無標題回 null）
+ *   MarkdownReaderLib.resolveCollision(name, existingNames) → string   同名時檔名尾附時間戳避開
  *   MarkdownReaderLib.uploadFile(file)        → Promise<resp>   上傳單一檔案
  *   MarkdownReaderLib.listFiles()             → Promise<Array<{name,size,mtime}>>
  *   MarkdownReaderLib.clearFolder()           → Promise<{ok,removed}>
@@ -74,6 +76,46 @@
   // 支援的副檔名（markdown 與常見純文字）
   var READABLE_RE = /\.(md|markdown|mdown|mkd|mkdn|mdwn|mdtxt|text|txt)$/i;
 
+  /* ---------- 檔名推導（貼上文字存檔用） ---------- */
+
+  // 剝掉標題文字裡的行內 markdown，留下可讀的純文字當檔名素材。
+  // 底線 _ 刻意保留（snake_case 標題常見；GFM 的 _ 強調需字界，誤刪風險大於漏刪）。
+  function stripInlineMd(s) {
+    return String(s || '')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')   // 圖片 → alt 文字
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')    // 連結 → 連結文字
+      .replace(/`+/g, '')                          // 行內碼圍欄
+      .replace(/\*+/g, '')                         // * 強調記號
+      .replace(/~~/g, '')                          // 刪除線
+      .replace(/<[^>]+>/g, '')                     // HTML 標籤
+      .trim();
+  }
+
+  // 檔案系統禁字 → 空白，收斂連續空白，去頭尾點/空白，長度上限 80（碼位計，surrogate 安全）
+  function sanitizeName(s) {
+    var t = String(s || '')
+      .replace(/[\/\\:*?"<>|\u0000-\u001f\u007f]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\.+/, '')
+      .replace(/[. ]+$/, '');
+    var cps = Array.from(t);
+    if (cps.length > 80) t = cps.slice(0, 80).join('').trim();
+    return t;
+  }
+
+  // 找第一個標題：ATX（# ～ ######）或 setext H1（下一行 ===）。
+  // 先去掉 fenced code block，避免把程式碼裡的 "# 註解" 誤認成標題；
+  // setext 只認 = 底線（- 底線與清單 / YAML frontmatter 分隔線易混淆，不採）。
+  function firstHeading(text) {
+    var src = String(text || '').replace(/\r\n?/g, '\n')
+      .replace(/^ {0,3}(```|~~~)[^\n]*\n[\s\S]*?\n {0,3}\1[^\n]*(\n|$)/gm, '\n');
+    var atx = src.match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$/m);
+    var setext = src.match(/^ {0,3}(\S[^\n]*?)[ \t]*\n {0,3}=+[ \t]*$/m);
+    if (atx && setext) return (atx.index <= setext.index) ? atx[1] : setext[1];
+    return atx ? atx[1] : (setext ? setext[1] : null);
+  }
+
   function pad2(n) { return ('0' + n).slice(-2); }
 
   // 加上 cache-busting query，確保每次都讀到伺服器最新內容
@@ -103,6 +145,36 @@
     /** 是否為可閱讀的 markdown / 文字檔 */
     isReadable: function (name) {
       return READABLE_RE.test(String(name || ''));
+    },
+
+    /**
+     * 以內文第一個標題推導檔名（'標題.md'）。
+     * 找不到標題、或標題消毒後為空 → 回 null（由 UI 擋下並提示補標題）。
+     */
+    deriveFilename: function (text) {
+      var h = firstHeading(text);
+      if (h == null) return null;
+      var name = sanitizeName(stripInlineMd(h));
+      return name ? name + '.md' : null;
+    },
+
+    /**
+     * 檔名與既有清單同名（不分大小寫，macOS 檔案系統預設不分）時，
+     * 尾附 -yyyyMMddHHmmss 避開，永不覆寫既有檔案。
+     */
+    resolveCollision: function (name, existingNames) {
+      var taken = {};
+      (existingNames || []).forEach(function (n) { taken[String(n).toLowerCase()] = true; });
+      if (!taken[String(name).toLowerCase()]) return name;
+      var i = name.lastIndexOf('.');
+      var base = i > 0 ? name.slice(0, i) : name;
+      var ext = i > 0 ? name.slice(i) : '';
+      // 時間戳只有秒級精度：fallback 名也要查表，仍撞（同秒二存、或清單裡本來就有該名）就補序號
+      var cand = base + '-' + MarkdownReaderLib.timestamp() + ext;
+      for (var seq = 2; taken[cand.toLowerCase()]; seq++) {
+        cand = base + '-' + MarkdownReaderLib.timestamp() + '-' + seq + ext;
+      }
+      return cand;
     },
 
     /**

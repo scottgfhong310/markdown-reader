@@ -109,6 +109,10 @@
   <div id="setting-github" class="side-tool" data-i18n-title="tool.github" title="閱讀 GitHub 下的 Markdown">
     <i class="material-icons">hub</i>
   </div>
+  <!-- 貼上 .md 文字存檔：第一個標題作為檔名，存入 /upload/markdown-reader 後開啟 -->
+  <div id="setting-paste" class="side-tool" data-i18n-title="tool.paste" title="貼上 Markdown 文字存為檔案">
+    <i class="material-icons">edit_note</i>
+  </div>
   <div id="setting-mode" class="side-tool" data-i18n-title="tool.mode" title="切換 light / dark">
     <i class="material-icons">dark_mode</i>
   </div>
@@ -181,6 +185,24 @@
       </div>
     </div>
     <div class="modal-footer">
+      <a href="#!" class="modal-close waves-effect btn-flat" data-i18n="config.close">關閉</a>
+    </div>
+  </div>
+
+  <!-- 貼上 Markdown 文字存檔：第一個標題＝檔名（即時預覽）；同名自動加時間戳、無標題擋下 -->
+  <div id="paste-modal" class="modal paste-modal">
+    <div class="modal-content">
+      <h5 data-i18n="paste.title">貼上 Markdown 文字</h5>
+      <p class="paste-hint" data-i18n-html="paste.hint">以第一個標題作為檔名，存入 <code>/upload/markdown-reader</code> 後直接開啟；同名時自動加時間戳，不覆寫既有檔案。</p>
+      <textarea id="paste-text" class="paste-text" spellcheck="false"
+        data-i18n-placeholder="paste.placeholder" placeholder="# 標題&#10;&#10;在此貼上 .md 內容…"></textarea>
+      <div class="paste-name-row">
+        <span class="paste-name-label" data-i18n="paste.filename">檔名</span>
+        <code id="paste-name" class="paste-name"></code>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" id="paste-save" class="waves-effect btn-flat disabled" data-i18n="paste.save">存檔並開啟</a>
       <a href="#!" class="modal-close waves-effect btn-flat" data-i18n="config.close">關閉</a>
     </div>
   </div>

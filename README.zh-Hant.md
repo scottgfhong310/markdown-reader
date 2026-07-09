@@ -5,6 +5,7 @@
 拖拉上傳、閱讀與列印 **Markdown** 的單頁 WebApp。以 [`zero-md`](https://github.com/zerodevx/zero-md) 渲染內容，搭配輕量的 Express 後端處理上傳 / 列表 / 清空。
 
 - 📥 **拖拉上傳** — 把 `.md` / `.txt` 等檔案拖到頁面任意位置即上傳並閱讀，**同名覆寫**
+- 📝 **貼上存檔** — 在面板貼上 Markdown 文字，以**第一個標題作為檔名**存入 `/upload/markdown-reader` 後直接開啟；同名自動加時間戳（不覆寫既有檔案）、無標題時擋下存檔
 - 🌗 **Light / Dark** 切換（記憶於 localStorage）
 - 🌐 **多語介面** — English / 繁體中文 / 日本語（預設 English，記憶於 localStorage）
 - 🖨️ **列印** — 直向 / 橫向切換，列印時強制白底黑字
