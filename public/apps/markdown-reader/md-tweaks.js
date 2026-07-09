@@ -35,14 +35,38 @@
     return md.replace(
       /(\*\*Tags\*\*)[ \t]*\r?\n[ \t]*\r?\n([^\r\n]+(?:\r?\n[^\r\n]+)*)/g,
       function (whole, head, block) {
-        var tokens = block.match(/#[^\s`]+/g);
+        // token 同時吃 #x 與跳脫寫法 \#x（輸出時去掉跳脫）
+        var tokens = block.match(/\\?#[^\s`]+/g);
         if (!tokens || !tokens.length) return whole;
         // block 去掉 tag / 項目符號 / 反引號 / 空白後若還有東西，代表不是純 tag 區 → 不動
-        if (block.replace(/#[^\s`]+/g, '').replace(/[-*`\s]/g, '')) return whole;
+        if (block.replace(/\\?#[^\s`]+/g, '').replace(/[-*`\s]/g, '')) return whole;
         // 不補尾端換行：block 後原本的換行仍在，由它收尾（避免多一個空行）
-        return head + '\n\n' + tokens.map(function (t) { return '`' + t + '`'; }).join(' ');
+        return head + '\n\n' + tokens.map(function (t) { return '`' + t.replace(/^\\/, '') + '`'; }).join(' ');
       }
     );
+  }
+
+  /* 微調 1b：「沒有 **Tags** / ## Tags 標題」的純 hashtag 區塊，也收成單行行內碼。
+   * 以空行分隔的區塊為單位：整塊「只由 tag／項目符號／反引號／空白 構成」才處理（同 #1 的保護），
+   *   - #概念釋義          #概念釋義
+   *   - #情感經濟    或    #情感經濟     →   `#概念釋義` `#情感經濟`
+   * 一般段落／表格／混有其他文字的清單不動；跳過程式碼（遮罩）；已是行內碼單行者重組結果相同（冪等）。 */
+  function bareTagList(md) {
+    return withCodeMasked(md, function (s) {
+      // 以捕捉群組 split：奇數位是「空行分隔符」原樣保留，偶數位才是區塊內容
+      var parts = s.split(/(\r?\n[ \t]*\r?\n)/);
+      for (var i = 0; i < parts.length; i += 2) {
+        var block = parts[i];
+        var tokens = block.match(/\\?#[^\s`]+/g);   // 同時吃 #x 與跳脫寫法 \#x
+        if (!tokens || !tokens.length) continue;
+        if (block.replace(/\\?#[^\s`]+/g, '').replace(/[-*`\s]/g, '')) continue;   // 非純 tag 區 → 不動
+        // 保留區塊頭尾的原有空白（如連續空行的第三個 \n），只重組中間內容
+        var lead = (block.match(/^\s*/) || [''])[0];
+        var tail = (block.match(/\s*$/) || [''])[0];
+        parts[i] = lead + tokens.map(function (t) { return '`' + t.replace(/^\\/, '') + '`'; }).join(' ') + tail;
+      }
+      return parts.join('');
+    });
   }
 
   /* 微調 2：把「前後皆無空白的單一 ~」補成 ` ~ `（前後各一個空白）。
@@ -89,6 +113,7 @@
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   var TWEAKS = [
     inlineTagList,
+    bareTagList,
     spaceBareTilde,
     spaceCjkBold
   ];

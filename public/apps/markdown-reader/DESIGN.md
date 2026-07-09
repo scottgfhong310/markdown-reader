@@ -112,7 +112,7 @@ side tool `newspaper` toggle：啟用 / 停用 `md-skin-css`（viewer-newsprint.
 side tool `auto_fix_high` toggle。以動態 `import('/lib/adp-col/mdFormater.js')` 載入，**載不到自動退回原文**。開：渲染前對佛典文體格式化；關：原文。記憶於 `localStorage('markdown-reader-format')`。下載永遠是原檔。
 
 ### 5.10 md-tweaks（渲染前微調）
-`MdTweaks.apply`：純字串、以 NUL 佔位**遮罩程式碼**後再轉換。目前三項：Tags hashtag 收成單行行內碼、裸 `~` 補空白（避免 GFM 誤判刪除線）、CJK 全形括號緊貼 `**` 補空白（避免 marked flanking 規則認不出粗體分隔符）。新增微調＝加一個純函式到 `TWEAKS` 陣列。
+`MdTweaks.apply`：純字串、以 NUL 佔位**遮罩程式碼**後再轉換。目前四項：`**Tags**` 後的 hashtag 收成單行行內碼、**無標題的純 hashtag 區塊**也收成單行（以空行分隔的區塊整塊只有 tag 才處理；`#x` 與跳脫 `\#x` 皆吃、輸出去跳脫）、裸 `~` 補空白（避免 GFM 誤判刪除線）、CJK 全形括號緊貼 `**` 補空白（避免 marked flanking 規則認不出粗體分隔符）。新增微調＝加一個純函式到 `TWEAKS` 陣列。
 
 ### 5.11 程式碼複製鈕
 渲染後在 shadow DOM 內把每個 `<pre>` 包進 `.code-wrap` 並加 `.copy-btn`；hover 才現身、觸控裝置常顯、列印隱藏。
