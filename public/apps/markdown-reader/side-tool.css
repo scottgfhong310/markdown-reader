@@ -4,25 +4,22 @@
  */
 
 :root {
-  --tool-top: 25vh;   /* 工具列起點（矮視窗由下方 media query 上移） */
   --tool-size: 46px;  /* icon 直徑 */
   --tool-gap: 9px;    /* icon 之間的間距 */
 }
 
-/* 矮視窗：起點上移、icon 緊湊化，容器本身超出時可捲動（不會被遮） */
-@media (max-height: 960px) {
-  :root { --tool-top: 10vh; }
-}
+/* 矮視窗：icon 緊湊化，工具數多時整欄捲動（不會被遮） */
 @media (max-height: 800px) {
-  :root { --tool-top: 8px; --tool-size: 40px; --tool-gap: 6px; }
+  :root { --tool-size: 40px; --tool-gap: 6px; }
 }
 
-/* flex 容器（家族 §5.5）：icon 由上而下排列，超出視窗高度時整欄捲動 */
+/* flex 容器（家族 §5.5）：垂直居中、icon 由上而下排列，超出視窗高度時整欄捲動 */
 #side-tools {
   position: fixed;
   right: 12px;
-  top: var(--tool-top);
-  max-height: calc(100vh - var(--tool-top) - 12px);
+  top: 50%;
+  transform: translateY(-50%);   /* 垂直居中於畫面右側 */
+  max-height: calc(100vh - 24px);
   display: flex;
   flex-direction: column;
   gap: var(--tool-gap);
