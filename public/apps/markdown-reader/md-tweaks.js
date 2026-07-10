@@ -87,20 +87,28 @@
    *   B) 一般 **粗體**：只有當收尾 ** 緊跟 CJK 開括號（**…**（）時 marked 認不出收尾分隔符
    *      → 僅在 span 與該開括號間補一個空白（不動開頭）：
    *        **立基**（六大為體…）  →  **立基** （六大為體…）
+   *   C) 內容以 CJK 閉括號「結尾」且後面緊接文字（**…）**傳）：收尾 ** 前是標點、後是字
+   *      → 不算合法收強調（flanking 2b 不成立）→ 於 span 前、後各補一個空白：
+   *        淨土教的**他力（tariki）**傳統  →  淨土教的 **他力（tariki）** 傳統
    * 單次掃描：把「可選的前一字」連同 span 一起消耗（收尾 ** 被吃掉，就不會被當成另一個 **（…**
    * 的開頭——例：**「甲」**（…**乙** 中那組收尾 ** + （ 不會誤配）。後一字用 charAt 前看、不消耗，
    * 所以兩個相鄰粗體共用的中間字也能各自補對。跳過程式碼。 */
   function spaceCjkBold(md) {
     var OPEN = '「『（《【〈〔［｛“‘';                                   // CJK / 全形 開引號・括號
+    var CLOSE = '」』）》】〉〕］｝”’';                                  // CJK / 全形 閉引號・括號
     var re = new RegExp('([^\\s*])?(\\*\\*(?:(?!\\*\\*)[^\\n])+\\*\\*)', 'g');
     return withCodeMasked(md, function (s) {
       return s.replace(re, function (m, before, span, offset, str) {
         var startsOpen = OPEN.indexOf(span.charAt(2)) >= 0;   // 開頭 ** 後第一個內容字是否為 CJK 開括號
+        var endsClose = CLOSE.indexOf(span.charAt(span.length - 3)) >= 0;   // 收尾 ** 前一個內容字是否為 CJK 閉括號
         var after = str.charAt(offset + m.length);
         var beforeSpace, afterSpace;
         if (startsOpen) {                                     // A：bracket-led span（既有行為）
           beforeSpace = (before != null);
           afterSpace = !!(after && after !== '*' && !/\s/.test(after));
+        } else if (endsClose) {                               // C：bracket-tailed span → 需要修時兩側都補
+          afterSpace = !!(after && after !== '*' && !/\s/.test(after));
+          beforeSpace = (before != null) && afterSpace;
         } else {                                              // B：一般粗體，只補「**（」這種收尾
           beforeSpace = false;
           afterSpace = !!(after && OPEN.indexOf(after) >= 0);
