@@ -70,16 +70,23 @@ body.sidenav-open #side-tools {
   line-height: 1;
 }
 
-/* #setting-menu 用 app icon（品牌標記）取代 Material Icon：以 mask + currentColor 呈現，
- * 顏色綁定 --tool-fg（隨 light/dark 主題自動切換，同 .glyph 缺字的做法），不需準備兩份圖。 */
+/* #setting-menu 用 app icon（品牌標記）取代 Material Icon：拆成兩層 mask 疊圖（同 .glyph 缺字的做法）——
+ * M 字母隨 --tool-fg 跟著 light/dark 主題變色；箭頭固定品牌綠，兩層 viewBox 一致、疊起來自動對齊。 */
 .side-tool .app-icon {
+  position: relative;
   display: inline-block;
   width: 28px;
   height: 28px;
-  background-color: var(--tool-fg);
+}
+.side-tool .app-icon-letter,
+.side-tool .app-icon-arrow {
+  position: absolute;
+  inset: 0;
   -webkit-mask: var(--g) center / contain no-repeat;
   mask: var(--g) center / contain no-repeat;
 }
+.side-tool .app-icon-letter { background-color: var(--tool-fg); }
+.side-tool .app-icon-arrow  { background-color: #5fcfa0; }   /* 品牌綠，不隨主題變 */
 
 /* #setting-menu：方形圓角徽章（squircle，比例同 markdown-icon.svg 本身的 22.5% 圓角），
  * 取代其餘按鈕的正圓，不被圓約束；底色／邊框仍沿用主題變數，隨 light/dark 自動切換。 */
