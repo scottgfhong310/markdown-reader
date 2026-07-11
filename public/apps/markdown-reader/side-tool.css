@@ -70,12 +70,22 @@ body.sidenav-open #side-tools {
   line-height: 1;
 }
 
-/* #setting-menu 用 app icon（自帶底色的圓角方塊 logo）取代 Material Icon，尺寸與圓形按鈕留一點呼吸空間 */
-.side-tool img.app-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  display: block;
+/* #setting-menu 用 app icon（品牌標記）取代 Material Icon：以 mask + currentColor 呈現，
+ * 顏色綁定 --tool-fg（隨 light/dark 主題自動切換，同 .glyph 缺字的做法），不需準備兩份圖。 */
+.side-tool .app-icon {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  background-color: var(--tool-fg);
+  -webkit-mask: var(--g) center / contain no-repeat;
+  mask: var(--g) center / contain no-repeat;
+}
+
+/* #setting-menu：拿掉圓形按鈕的底色／邊框／陰影，讓 app icon 以原生造型顯示，不被圓約束 */
+#setting-menu {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 /* 排列順序＝index.html 內 #side-tools 的 DOM 順序（flex column，免逐顆定位） */
