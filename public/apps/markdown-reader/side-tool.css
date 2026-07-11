@@ -81,11 +81,10 @@ body.sidenav-open #side-tools {
   mask: var(--g) center / contain no-repeat;
 }
 
-/* #setting-menu：拿掉圓形按鈕的底色／邊框／陰影，讓 app icon 以原生造型顯示，不被圓約束 */
+/* #setting-menu：方形圓角徽章（squircle，比例同 markdown-icon.svg 本身的 22.5% 圓角），
+ * 取代其餘按鈕的正圓，不被圓約束；底色／邊框仍沿用主題變數，隨 light/dark 自動切換。 */
 #setting-menu {
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  border-radius: 22%;
 }
 
 /* 排列順序＝index.html 內 #side-tools 的 DOM 順序（flex column，免逐顆定位） */
