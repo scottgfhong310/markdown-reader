@@ -5,8 +5,8 @@
   "start_url": "/apps/markdown-reader/",
   "scope": "/apps/markdown-reader/",
   "display": "standalone",
-  "background_color": "#1c1f31",
-  "theme_color": "#1c1f31",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
   "icons": [
     { "src": "/apps/markdown-reader/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/apps/markdown-reader/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
