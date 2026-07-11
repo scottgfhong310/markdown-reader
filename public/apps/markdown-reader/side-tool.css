@@ -94,6 +94,11 @@ body.sidenav-open #side-tools {
   border-radius: 22%;
 }
 
+/* 第一顆是 app-icon 徽章 → 與第二顆間距加倍（把「品牌」和下面的「工具」視覺分區；同家族 color-palette，見 §5.5）*/
+#side-tools > .side-tool:first-child:has(.app-icon) {
+  margin-bottom: var(--tool-gap);   /* flex gap 之外再加一份＝加倍 */
+}
+
 /* 排列順序＝index.html 內 #side-tools 的 DOM 順序（flex column，免逐顆定位） */
 
 /* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
