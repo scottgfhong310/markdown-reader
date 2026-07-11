@@ -3,6 +3,7 @@
   "short_name": "MD Reader",
   "description": "拖拉上傳、閱讀與列印 Markdown 的單頁 WebApp",
   "start_url": "/apps/markdown-reader/",
+  "scope": "/apps/markdown-reader/",
   "display": "standalone",
   "background_color": "#1c1f31",
   "theme_color": "#1c1f31",
