@@ -1,0 +1,14 @@
+{
+  "name": "Markdown Reader",
+  "short_name": "MD Reader",
+  "description": "拖拉上傳、閱讀與列印 Markdown 的單頁 WebApp",
+  "start_url": "/apps/markdown-reader/",
+  "display": "standalone",
+  "background_color": "#1c1f31",
+  "theme_color": "#1c1f31",
+  "icons": [
+    { "src": "/apps/markdown-reader/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/apps/markdown-reader/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apps/markdown-reader/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
