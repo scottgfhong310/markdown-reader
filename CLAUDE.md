@@ -9,7 +9,7 @@
 
 ```
 app.js                              # Express 入口：port 3000；/ → 302 /apps/markdown-reader/
-routes/upload.js                    # POST /api/upload?folder=markdown-reader（共用最小版）
+routes/upload.js                    # POST /api/upload?folder=markdown-reader（共用最小版；含檔名消毒 sanitizeUploadName，§3.4）
 routes/markdown-reader.js           # GET /files、POST /clear；GET /github-list、GET /github-file
                                     #   唯讀瀏覽根：nodeapp/GitHub 全樹、nodeapp 頂層、txf-neo、
                                     #   Claude memory（MEMORY_PROJECTS 清單：GitHub / nodeapp /
