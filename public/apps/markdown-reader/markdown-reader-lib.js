@@ -214,8 +214,8 @@
         });
     },
 
-    /** 列出 nodeapp/GitHub 下的 .md ＋ nodeapp 頂層 .md
-     *  → { files:[{ path, size, mtime }], nodeappFiles:[{ name, size, mtime }] } */
+    /** 列出 nodeapp/GitHub 下的 .md ＋ nodeapp 頂層 .md ＋ txf-neo ＋ Claude memory
+     *  → { files:[{ path, size, mtime }], nodeappFiles:[{ name, size, mtime }], txfFiles:[…], memoryFiles:[…] } */
     listGithub: function () {
       return fetch(bust(GITHUB_LIST_API), { cache: 'no-store' })
         .then(function (r) {
@@ -223,7 +223,12 @@
           return r.json();
         })
         .then(function (d) {
-          return { files: (d && d.files) || [], nodeappFiles: (d && d.nodeappFiles) || [], txfFiles: (d && d.txfFiles) || [] };
+          return {
+            files: (d && d.files) || [],
+            nodeappFiles: (d && d.nodeappFiles) || [],
+            txfFiles: (d && d.txfFiles) || [],
+            memoryFiles: (d && d.memoryFiles) || []
+          };
         });
     },
 

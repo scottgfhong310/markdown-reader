@@ -315,6 +315,7 @@
 
   var NODEAPP_PATH = '@nodeapp';   // 頂層 nodeapp 容器節點的 sentinel 路徑（非真實資料夾）
   var TXF_PATH = '@txf';           // txf-neo 根節點的 sentinel 前綴（鍵＝'@txf' 或 '@txf/<rel>'）
+  var MEMORY_PATH = '@memory';     // Claude memory 根節點的 sentinel 前綴（root=memory）
 
   // 由各 dirname 建巢狀樹（補中間層節點）：nodeapp → GitHub 容器 ＋ 同層 txf-neo（有內容才顯示）
   function buildGithubForest() {
@@ -331,17 +332,22 @@
     }
     var githubNode = makeNode('GitHub', '');
     var txfNode = makeNode('txf-neo', TXF_PATH);
+    var memoryNode = makeNode('memory', MEMORY_PATH);
     Object.keys(githubTree).forEach(function (folder) {
-      if (folder === '' || folder === NODEAPP_PATH || folder === TXF_PATH) return;
+      if (folder === '' || folder === NODEAPP_PATH || folder === TXF_PATH || folder === MEMORY_PATH) return;
       if (folder.indexOf(TXF_PATH + '/') === 0) insert(txfNode, TXF_PATH, folder.slice(TXF_PATH.length + 1));
+      else if (folder.indexOf(MEMORY_PATH + '/') === 0) insert(memoryNode, MEMORY_PATH, folder.slice(MEMORY_PATH.length + 1));
       else if (folder.charAt(0) !== '@') insert(githubNode, '', folder);
     });
     var nodeappNode = makeNode('nodeapp', NODEAPP_PATH);
     nodeappNode.children['GitHub'] = githubNode;
     githubForest = { children: { 'nodeapp': nodeappNode } };
-    // txf-neo 掛在與 nodeapp 同層；沒掃到任何 .md 時不顯示（clone 到別台機器不會出現空節點）
+    // txf-neo / memory 掛在與 nodeapp 同層；沒掃到任何 .md 時不顯示（clone 到別台機器不會出現空節點）
     if ((githubTree[TXF_PATH] || []).length || Object.keys(txfNode.children).length) {
       githubForest.children['txf-neo'] = txfNode;
+    }
+    if ((githubTree[MEMORY_PATH] || []).length || Object.keys(memoryNode.children).length) {
+      githubForest.children['memory'] = memoryNode;
     }
   }
 
@@ -356,7 +362,7 @@
     var showSet = null, forceExpand = false;
     if (q) {
       forceExpand = true; showSet = {};
-      showSet[NODEAPP_PATH] = true; showSet[''] = true; showSet[TXF_PATH] = true;   // 頂層容器永遠保留
+      showSet[NODEAPP_PATH] = true; showSet[''] = true; showSet[TXF_PATH] = true; showSet[MEMORY_PATH] = true;   // 頂層容器永遠保留
       Object.keys(githubTree).forEach(function (folder) {
         if (folder === '' || folder.toLowerCase().indexOf(q) < 0) return;
         var segs = folder.split('/'), acc = '';
@@ -397,8 +403,8 @@
 
   // 只展開「祖先」讓選取項看得見；不動選取項自身的展開狀態（名稱點擊的收合才不會被蓋掉）
   function expandGithubAncestors(folder) {
-    if (folder === NODEAPP_PATH || folder === TXF_PATH) return;   // 已是最上層
-    if (folder.indexOf(TXF_PATH + '/') === 0) {                   // txf 子層：'@txf' 起的沿途祖先
+    if (folder === NODEAPP_PATH || folder === TXF_PATH || folder === MEMORY_PATH) return;   // 已是最上層
+    if (folder.indexOf(TXF_PATH + '/') === 0 || folder.indexOf(MEMORY_PATH + '/') === 0) {  // txf / memory 子層：sentinel 起的沿途祖先
       var tsegs = folder.split('/'), tacc = '';
       for (var t = 0; t < tsegs.length - 1; t++) { tacc = tacc ? tacc + '/' + tsegs[t] : tsegs[t]; githubExpanded[tacc] = true; }
       return;
@@ -455,15 +461,23 @@
         var name = i < 0 ? f.path : f.path.slice(i + 1);
         (githubTree[key] = githubTree[key] || []).push({ path: f.path, name: name, size: f.size, root: 'txf-neo' });
       });
+      // Claude memory 檔案：鍵加 '@memory' 前綴；開檔走 root=memory
+      (d.memoryFiles || []).forEach(function (f) {
+        var i = f.path.lastIndexOf('/');
+        var key = i < 0 ? MEMORY_PATH : MEMORY_PATH + '/' + f.path.slice(0, i);
+        var name = i < 0 ? f.path : f.path.slice(i + 1);
+        (githubTree[key] = githubTree[key] || []).push({ path: f.path, name: name, size: f.size, root: 'memory' });
+      });
       buildGithubForest();
       // 保留上次的展開/選取狀態；首次載入才給預設（展開 nodeapp / GitHub）
-      if (!Object.keys(githubExpanded).length) { githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true; githubExpanded[TXF_PATH] = true; }
-      // 若 viewer 正開著某份 GitHub / nodeapp / txf 檔 → 定位到它所在的資料夾
+      if (!Object.keys(githubExpanded).length) { githubExpanded[NODEAPP_PATH] = true; githubExpanded[''] = true; githubExpanded[TXF_PATH] = true; githubExpanded[MEMORY_PATH] = true; }
+      // 若 viewer 正開著某份 GitHub / nodeapp / txf / memory 檔 → 定位到它所在的資料夾
       if (githubCurrentPath != null) {
         var cf;
         var cdir = githubCurrentPath.indexOf('/') < 0 ? '' : githubCurrentPath.slice(0, githubCurrentPath.lastIndexOf('/'));
         if (githubCurrentRoot === 'nodeapp') cf = NODEAPP_PATH;
         else if (githubCurrentRoot === 'txf-neo') cf = cdir ? TXF_PATH + '/' + cdir : TXF_PATH;
+        else if (githubCurrentRoot === 'memory') cf = cdir ? MEMORY_PATH + '/' + cdir : MEMORY_PATH;
         else cf = cdir;
         if (githubTree[cf]) githubActiveFolder = cf;
       }

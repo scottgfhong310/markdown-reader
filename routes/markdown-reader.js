@@ -17,6 +17,7 @@
 
 const express = require('express');
 const path = require('path');
+const os = require('os');
 const fs = require('fs').promises;
 const fsSync = require('fs');   // GITHUB_DIR 解析用（existsSync）
 
@@ -128,6 +129,11 @@ function sanitizeMdRel(p) {
 const NODEAPP_DIR = path.resolve(GITHUB_DIR, '..');
 // txf-neo：與 nodeapp 同層的專案根，整棵遞迴（比照 GitHub）；不存在時回空清單
 const TXF_DIR = path.resolve(NODEAPP_DIR, '..', 'txf-neo');
+// Claude memory：~/.claude/projects/<GitHub 路徑轉 dash>/memory（Claude Code 對本工作區的
+// 持久記憶，如 /Users/scott/.claude/projects/-Users-Shared-nodeapp-GitHub/memory）；
+// 資料夾名由 GITHUB_DIR 推導（路徑分隔符 → '-'），換機器也解析正確；不存在時回空清單。
+const MEMORY_DIR = path.join(os.homedir(), '.claude', 'projects',
+  GITHUB_DIR.split(path.sep).join('-'), 'memory');
 
 async function listNodeappMd() {
   const out = [];
@@ -143,7 +149,7 @@ async function listNodeappMd() {
   return out;
 }
 
-// GET /api/markdown-reader/github-list — 列 nodeapp/GitHub 全部 ＋ nodeapp 頂層 ＋ txf-neo 全部
+// GET /api/markdown-reader/github-list — 列 nodeapp/GitHub 全部 ＋ nodeapp 頂層 ＋ txf-neo 全部 ＋ Claude memory
 router.get('/github-list', async (req, res) => {
   try {
     const files = [];
@@ -153,23 +159,27 @@ router.get('/github-list', async (req, res) => {
     const txfFiles = [];
     await walkMd(TXF_DIR, txfFiles, TXF_DIR);
     txfFiles.sort((a, b) => a.path.localeCompare(b.path));
-    return res.json({ ok: true, files, nodeappFiles, txfFiles });
+    const memoryFiles = [];
+    await walkMd(MEMORY_DIR, memoryFiles, MEMORY_DIR);
+    memoryFiles.sort((a, b) => a.path.localeCompare(b.path));
+    return res.json({ ok: true, files, nodeappFiles, txfFiles, memoryFiles });
   } catch (err) {
     console.error('[markdown-reader] GET /github-list failed:', err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// GET /api/markdown-reader/github-file?path=<rel>[&root=nodeapp|txf-neo] — 讀單一 .md（回純文字）
-// root=nodeapp 時 path 限單一檔名（nodeapp 頂層檔）；root=txf-neo 相對 txf-neo/；預設 root＝GitHub/。
+// GET /api/markdown-reader/github-file?path=<rel>[&root=nodeapp|txf-neo|memory] — 讀單一 .md（回純文字）
+// root=nodeapp 時 path 限單一檔名（nodeapp 頂層檔）；root=txf-neo 相對 txf-neo/；
+// root=memory 相對 Claude memory 夾；預設 root＝GitHub/。
 router.get('/github-file', async (req, res) => {
   const rel = sanitizeMdRel(req.query.path);
   if (!rel) return res.status(400).json({ ok: false, error: '不允許的路徑' });
   const root = req.query.root || '';
-  if (root && root !== 'nodeapp' && root !== 'txf-neo') return res.status(400).json({ ok: false, error: '不允許的 root' });
+  if (root && root !== 'nodeapp' && root !== 'txf-neo' && root !== 'memory') return res.status(400).json({ ok: false, error: '不允許的 root' });
   const isNodeapp = root === 'nodeapp';
   if (isNodeapp && rel.indexOf('/') >= 0) return res.status(400).json({ ok: false, error: '不允許的路徑' });
-  const baseDir = isNodeapp ? NODEAPP_DIR : (root === 'txf-neo' ? TXF_DIR : GITHUB_DIR);
+  const baseDir = isNodeapp ? NODEAPP_DIR : (root === 'txf-neo' ? TXF_DIR : (root === 'memory' ? MEMORY_DIR : GITHUB_DIR));
   const abs = path.join(baseDir, rel);
   if (!withinDir(baseDir, abs)) return res.status(400).json({ ok: false, error: '路徑越界' });
   try {

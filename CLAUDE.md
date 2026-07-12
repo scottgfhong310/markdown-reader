@@ -10,7 +10,9 @@
 ```
 app.js                              # Express 入口：port 3000；/ → 302 /apps/markdown-reader/
 routes/upload.js                    # POST /api/upload?folder=markdown-reader（共用最小版）
-routes/markdown-reader.js           # GET /files、POST /clear
+routes/markdown-reader.js           # GET /files、POST /clear；GET /github-list、GET /github-file
+                                    #   唯讀瀏覽根：nodeapp/GitHub 全樹、nodeapp 頂層、txf-neo、
+                                    #   Claude memory（~/.claude/projects/<GitHub 路徑轉 dash>/memory）
 public/apps/markdown-reader/        # 前端（服務於 /apps/markdown-reader/）
 ├─ index.html · markdown-reader.css · markdown-reader.js · markdown-reader-lib.js
 ├─ md-tweaks.js                     # 渲染前 .md 內容微調（window.MdTweaks；**Tags**→行內碼、單一 ~ 補空白）
