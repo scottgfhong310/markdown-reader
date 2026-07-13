@@ -69,6 +69,19 @@
     });
   }
 
+  /* 微調 1c：整行只有 **Key words** 或 **Tags** 這種「粗體偽標題」，升級成真正的 #### 標題。
+   *   **Key words**   →   #### Key words
+   *   **Tags**        →   #### Tags
+   * 必須放在 #1（inlineTagList）/ #1b（bareTagList）之後：那兩個微調靠偵測整段 **Tags** 粗體
+   * 文字來觸發後面 hashtag 清單的收合；若先轉成標題，**Tags** 就不存在了、觸發不到。
+   * 只吃「整行剛好只有這個粗體詞」（trim 後完全相等），避免誤傷句子中提到的 **Tags**；
+   * 已是 #### 標題者不會再被吃到（冪等）。跳過程式碼（遮罩）。 */
+  function headerizeLabels(md) {
+    return withCodeMasked(md, function (s) {
+      return s.replace(/^[ \t]*\*\*(Key words|Tags)\*\*[ \t]*$/gm, '#### $1');
+    });
+  }
+
   /* 微調 2：把「前後皆無空白的單一 ~」補成 ` ~ `（前後各一個空白）。
    *   Option 1~Option 7   →   Option 1 ~ Option 7
    * 否則成對的單一 ~ 會被 GFM 當刪除線分隔符（~text~）。跳過程式碼；不動雙波浪 ~~刪除線~~
@@ -122,6 +135,7 @@
   var TWEAKS = [
     inlineTagList,
     bareTagList,
+    headerizeLabels,
     spaceBareTilde,
     spaceCjkBold
   ];
