@@ -102,8 +102,8 @@ side tool `newspaper` toggle：啟用 / 停用 `md-skin-css`（viewer-newsprint.
 - **`.no-print` / `.screen-only`**：螢幕可讀、列印 `display:none`。
 - 深底 inline-style SVG 在列印反白為淺底（屬性選擇器）；複製鈕列印隱藏。
 
-### 5.7 右側工具列（12 顆）
-`menu · mode · lang · style · format · orientation · print · print-scale · config · download · clear-page · clear`。位置由 side-tool.css 的 CSS 變數排列（`--tool-top: 25vh`、`--tool-gap: 9px`、`--tool-step` 自動計算）；開啟側欄時整排隱藏、收起再淡入。各 toggle 狀態分別持久化（見 §7）。
+### 5.7 右側工具列（13 顆）
+`menu · paste · mode · lang · style · format · orientation · print · print-scale · config · download · clear-page · clear`。以 side-tool.css 的 `#side-tools` flex 容器垂直居中堆疊，順序＝DOM 順序（家族 §5.5）；開啟側欄時整排隱藏、收起再淡入。各 toggle 狀態分別持久化（見 §7）。
 
 ### 5.8 config 設定面板（modal）
 `settings` icon → Materialize modal，5 個列印分頁 checkbox。勾選**即時**套用（`applyPrintSettings()` 設 host 屬性）並存 `localStorage('markdown-reader-print')`；config.json 為預設、面板覆寫。

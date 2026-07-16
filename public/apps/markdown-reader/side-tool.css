@@ -153,7 +153,7 @@ body.sidenav-open #side-tools {
 #config-modal .modal-footer .btn-flat { color: var(--accent); }
 
 @media print {
-  #config-modal, #github-modal, #paste-modal, .modal-overlay { display: none !important; }
+  #config-modal, #paste-modal, .modal-overlay { display: none !important; }
 }
 
 /* ===== 貼上 Markdown 文字面板（paste icon 開啟的 Materialize modal） ===== */
@@ -207,70 +207,3 @@ body.sidenav-open #side-tools {
 }
 #paste-modal .modal-footer .btn-flat { color: var(--accent); }
 #paste-modal .modal-footer .btn-flat.disabled { color: var(--muted); }
-
-/* ===== GitHub .md 瀏覽面板（github icon 開啟的 Materialize modal） ===== */
-#github-modal {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  max-width: 780px;
-  width: 94%;
-  max-height: 82vh;
-}
-#github-modal .modal-content { padding: 20px 24px; }
-#github-modal h5 { margin: 0 0 12px; font-weight: 600; color: var(--text); }
-#github-modal .github-filter {
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: .95rem;
-}
-#github-modal .github-filter:focus { outline: none; border-color: var(--accent); }
-/* 兩欄：資料夾清單 | 檔案清單 */
-#github-modal .github-cols { display: flex; gap: 14px; }
-#github-modal .github-col { min-width: 0; display: flex; flex-direction: column; }
-#github-modal .github-col-folders { flex: 0 0 44%; }
-#github-modal .github-col-files { flex: 1 1 auto; }
-#github-modal .github-col-head { font-size: .78rem; color: var(--muted); margin: 0 0 6px; padding-left: 4px; }
-#github-modal .github-list { margin: 0; max-height: 50vh; overflow: auto; }
-#github-modal .github-list li { margin: 0; }
-
-#github-modal .github-folder {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 8px;
-  color: var(--text);
-}
-#github-modal .github-folder:hover { background: rgba(127, 127, 127, 0.14); }
-#github-modal .github-folder.active { background: rgba(127, 127, 127, 0.18); color: var(--accent); }
-#github-modal .github-folder .material-icons { font-size: 18px; color: var(--muted); flex: 0 0 auto; }
-#github-modal .github-caret { width: 16px; text-align: center; }
-#github-modal .github-folder.active .material-icons { color: var(--accent); }
-#github-modal .github-folder span:not(.github-count) { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#github-modal .github-count { flex: 0 0 auto; font-size: .72rem; color: var(--muted); }
-#github-modal .github-empty,
-#github-modal .github-loading { padding: 12px 4px; color: var(--muted); }
-#github-modal .github-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 8px;
-  color: var(--text);
-}
-#github-modal .github-item:hover { background: rgba(127, 127, 127, 0.14); }
-#github-modal .github-item.active { background: rgba(127, 127, 127, 0.18); color: var(--accent); }
-#github-modal .github-item.active .material-icons { color: var(--accent); }
-#github-modal .github-item .material-icons { font-size: 18px; color: var(--muted); flex: 0 0 auto; }
-#github-modal .github-item span:not(.github-size) { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#github-modal .github-size { flex: 0 0 auto; font-size: .75rem; color: var(--muted); }
-#github-modal .modal-footer { background: transparent; border-top: 1px solid var(--border); }
-#github-modal .modal-footer .btn-flat { color: var(--accent); }

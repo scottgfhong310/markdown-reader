@@ -119,10 +119,6 @@
       <span class="app-icon-arrow" style="--g:url('./icons/markdown-mark-arrow.svg')"></span>
     </span>
   </div>
-  <!-- 瀏覽 nodeapp/GitHub 下的 .md（唯讀） -->
-  <div id="setting-github" class="side-tool" data-i18n-title="tool.github" title="閱讀 GitHub 下的 Markdown">
-    <i class="material-icons">hub</i>
-  </div>
   <!-- 貼上 .md 文字存檔：第一個標題作為檔名，存入 /upload/markdown-reader 後開啟 -->
   <div id="setting-paste" class="side-tool" data-i18n-title="tool.paste" title="貼上 Markdown 文字存為檔案">
     <i class="material-icons">edit_note</i>
@@ -176,27 +172,6 @@
         <li><label><input type="checkbox" id="cfg-allowBlock" class="filled-in" /><span data-i18n="config.allowBlock">允許段落／引用／程式碼區塊跨頁</span></label></li>
         <li><label><input type="checkbox" id="cfg-allowRow" class="filled-in" /><span data-i18n="config.allowRow">允許表格單一列跨頁</span></label></li>
       </ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close waves-effect btn-flat" data-i18n="config.close">關閉</a>
-    </div>
-  </div>
-
-  <!-- 瀏覽 nodeapp/GitHub 下的 .md（唯讀）：選一份開啟閱讀 -->
-  <div id="github-modal" class="modal github-modal">
-    <div class="modal-content">
-      <h5 data-i18n="github.title">閱讀 nodeapp/GitHub 下的 Markdown</h5>
-      <input type="text" id="github-filter" class="github-filter" data-i18n-placeholder="github.filter" placeholder="以資料夾篩選…" />
-      <div class="github-cols">
-        <div class="github-col github-col-folders">
-          <div class="github-col-head" data-i18n="github.folders">資料夾</div>
-          <ul id="github-folders" class="github-list"></ul>
-        </div>
-        <div class="github-col github-col-files">
-          <div class="github-col-head" data-i18n="github.files">檔案</div>
-          <ul id="github-files" class="github-list"></ul>
-        </div>
-      </div>
     </div>
     <div class="modal-footer">
       <a href="#!" class="modal-close waves-effect btn-flat" data-i18n="config.close">關閉</a>
