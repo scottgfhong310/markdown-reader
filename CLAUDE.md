@@ -5,6 +5,11 @@
 本 app 屬於 **nodeapp WebApp 家族**；共同規範與流程在
 <https://github.com/scottgfhong310/nodeapp-webapp-family>（`DESIGN_GUIDELINES.md` 規範、`WORKFLOW.md` 流程）。**改動前請先讀那兩份，照其中 canon 做。**
 
+> **歷史**（2026-07-16）：原本掛在這裡的「Read Markdown under nodeapp/GitHub」本地目錄瀏覽功能
+> （`hub` 側鍵＋雙欄 modal＋`/github-list`、`/github-file` 兩支唯讀 API）已**獨立成
+> [`local-reader`](https://github.com/scottgfhong310/local-reader)**（唯讀瀏覽本地目錄樹下的 `.md` / `.json`，private）。
+> markdown-reader 回歸單純的上傳／閱讀／列印本職，不再有任何「讀本機其他目錄」的功能。要那個功能請用 local-reader。
+
 ## 結構
 
 ```
