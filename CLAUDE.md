@@ -34,6 +34,19 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 > **App icon 有下游共用**：`icons/`（「M＋箭頭」品牌圖）與 [`local-reader`](https://github.com/scottgfhong310/local-reader) 共用一組——
 > local-reader 的 `icons/` 是**從這裡複製**的（它只另改 `manifest.json` 的 name/start_url/scope）。**在這裡換圖時，記得一併同步 local-reader 那份**（兩支 markdown 家族 app 共用同一品牌識別，owner 決定）。
 
+## 複製件登記（共用件改版時靠這份找同步點）
+
+| 檔案 | 來源 / 權威版本 |
+|---|---|
+| `i18n.js` | 家族共用 i18n 引擎（各 app 同款；改版需同步全部複製點） |
+| `side-tool.css` | 家族 §5.5〔正統〕flex `.side-tools` 版 |
+| `thinking-dot.css` | `markdown-library` 那份為準（家族 §4.6，byte-identical） |
+| `md-tweaks.js` | `markdown-library` 那份為準（byte-identical） |
+| `filter-clear.css`、`filter-clear.js` | 家族 §5.12，`local-reader` 那份為準（byte-identical） |
+| `public/lib/adp-col/mdFormater.js` | adp-col 孵化器產出（與 `markdown-library` 同份 byte-identical） |
+| `viewer.css`、`viewer-newsprint.css`、`newsprint-fonts.css`、`fonts/pt-serif/` | **本 app 為源頭**（zero-md 內容樣式層）；`local-reader` 自此複製、byte-identical（`markdown-library` 的 `viewer.css`/`newsprint-fonts.css` 已加內容相依版型而分岔） |
+| `icons/`（「M＋箭頭」品牌圖 + favicon/PWA） | **本 app 為源頭**；`local-reader` / `markdown-library` 自此複製、byte-identical（換圖時一併同步下游） |
+
 ## 執行 / 驗證
 
 ```bash
