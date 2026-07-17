@@ -212,6 +212,17 @@
     padding-right: 1em !important;
   }
 
+  /* 表格框線寬度/樣式寫死，不依賴 github-markdown（同 blockquote 的 CDN race 防禦）：
+   * newsprint 皮膚只設 border-color（`--np-rule`），格線的**寬度與樣式**是靠 github-markdown 的
+   * `td/th { border: 1px solid }`。列印時 github 若因 CDN race 暫失，td/th 的 border-width 掉回
+   * UA 預設 0 → 整個表格框線消失。在此把寬度/樣式固定，顏色仍交給各風格自己
+   * （newsprint 的 `--np-rule` / github 風的 github-markdown 或 fallback 文字色），與 github 是否載到脫鉤。 */
+  .markdown-body table th,
+  .markdown-body table td {
+    border-width: 1px;
+    border-style: solid;
+  }
+
   .markdown-body a {
     color: #000 !important;
     text-decoration: underline !important;
