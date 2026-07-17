@@ -31,13 +31,16 @@
 /* 等寬文字統一改用 CJK 友善的 Sarasa Mono TC Light：
  * 涵蓋純文字（無語言）code fence、語法高亮區塊與行內 code（含 kbd / samp）。
  * 置於 github-markdown 之後、同特異度 → 覆寫其預設等寬字堆疊；
- * 仍可由 config.json 的 codeFont（apply:true）再進一步覆寫。 */
+ * 仍可由 config.json 的 codeFont（apply:true）再進一步覆寫。
+ *
+ * 不指定 font-weight：家族名 'Sarasa Mono TC Light' 本身就選定 Light 字面（實測 @300 與 @400
+ * 墨量相同），而 font-weight 會連帶套到後備堆疊——沒裝 Sarasa 的機器會因此把 SF Mono /
+ * Consolas 也用 Light 算繪、跟著變細。列印另有較濃的 Regular，見下方 @media print。 */
 .markdown-body code,
 .markdown-body kbd,
 .markdown-body pre,
 .markdown-body samp {
   font-family: 'Sarasa Mono TC Light', 'Sarasa Mono TC', ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-weight: 300;
 }
 
 .markdown-body img {
@@ -142,6 +145,41 @@
     background: transparent !important;
   }
 
+  /* 程式碼區塊上紙：
+   * ① overflow 必須放開——螢幕的 overflow-x:auto 在紙上捲不動，過長的行會被「直接裁掉」而非
+   *    折行（實測：原文「…的『聯集』，也 flat」在 PDF 只印到「聯」，其餘無聲消失）。
+   *    改 visible + pre-wrap 讓長行折行，內容不再遺失，順帶也不會畫出水平捲軸。
+   * ② 外框而非底色：Chrome 列印預設不印背景色（除非使用者勾「背景圖形」），但**邊框一定會印**。
+   *    所以用細邊框界定區塊；底色留著當作有勾選背景圖形時的加分（需蓋過上面的 * 去底規則，
+   *    .markdown-body pre 特異度 (0,0,2) > (0,0,1)，同為 !important 時勝出）。 */
+  .markdown-body pre {
+    overflow: visible !important;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 0.7em 0.9em;
+    background: #f6f8fa !important;
+  }
+
+  /* 複製鈕的定位容器：不要把邊框重複畫一層，也不要裁切 */
+  .markdown-body .code-wrap {
+    overflow: visible !important;
+  }
+
+  /* 等寬字改用 Sarasa 的 Regular：螢幕的 Light 在 12pt 紙上偏淡（實測墨量 222949，
+   * 換成 Regular 為 284103 ≈ 舊 SF Mono 堆疊的 284398，紙面濃度等於改版前）。
+   * 家族名必須寫系統登記的「等距更紗黑體 TC」——英文名 'Sarasa Mono TC' 在 macOS 上
+   * 永遠只配得到 Light 字面（實測八個候選名，僅此一個配得到 Regular）。
+   * 英文名與 ui-monospace 留作其他平台／未裝 Sarasa 時的後備。 */
+  .markdown-body code,
+  .markdown-body kbd,
+  .markdown-body pre,
+  .markdown-body samp {
+    font-family: '等距更紗黑體 TC', 'Sarasa Mono TC', ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-weight: 400;
+  }
+
   /* 例外：缺字 .glyph 以 background-color + mask 成形，去底會讓整字消失 → 還原為文字色（列印＝黑） */
   .markdown-body .glyph {
     background-color: currentColor !important;
@@ -160,6 +198,18 @@
   .markdown-body code,
   .markdown-body blockquote {
     color: #000 !important;
+  }
+
+  /* blockquote 的縮排寫死，不依賴 github-markdown：列印時 beforeprint 把 github 樣式表的 href
+   * 從 dark 換成 light，觸發一次 CDN 重新載入；冷抓取／CDN 慢時，Chrome 會在 light 版載完前就
+   * 取樣列印，那一刻 github-markdown 整個不在，blockquote 退回瀏覽器預設（margin-inline:40px、
+   * padding:0）——表現為「整塊內縮約 30pt、文字緊貼左線」。故在此把它固定成 newsprint/github
+   * 一致的縮排，與 CDN 載入時序脫鉤（時好時壞的 race 就此消除）。 */
+  .markdown-body blockquote {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 1em !important;
+    padding-right: 1em !important;
   }
 
   .markdown-body a {

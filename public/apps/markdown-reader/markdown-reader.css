@@ -279,8 +279,18 @@ body.is-empty .viewer-card {
   #toast-container { display: none !important; }
   #loading { display: none !important; }
   .viewer-card { border: none !important; padding: 0 !important; }
+  /* 列印一律當成淺色配色：dark 主題的 :root { color-scheme: dark } 會讓「瀏覽器自己」把畫布
+   * 塗成 UA 預設深色（Chrome ＝ #121212），那是 UA 層的畫布、不是作者的 background，
+   * 所以下面那條 html/body 的 background:#fff !important 蓋不到它——dark 模式列印會整頁黑底、
+   * 只有內容區是白的（實測存出的 PDF 頁緣像素 rgb(18,18,18) 且 alpha 255）。必須放在
+   * html/body 那條之前後皆可，重點是把 color-scheme 也切回 light。 */
+  :root { color-scheme: light !important; }
   /* 列印：外層底色一律白（無論目前 light/dark 主題） */
   html, body, main, .app-container, .viewer-card { background: #fff !important; color: #000 !important; }
+  /* 主題切換用的 body { transition: background .2s } 在列印時有害：瀏覽器套用列印樣式後幾乎
+   * 立刻取樣排版，此時 body 底色還停在過渡起點（dark ＝ 深色）。實測 t=0ms 仍是 rgb(15,17,21)、
+   * 要 ~400ms 才轉白；勾選「背景圖形」列印時就會印出深色。列印不需要動畫，直接關掉。 */
+  body { transition: none !important; }
   main { padding: 0 !important; }
   .app-container { width: 100% !important; max-width: none !important; }
   /* 檔案清單側欄是 position:fixed；不隱藏的話會被當成「每頁都出現」的固定元素，
