@@ -28,6 +28,18 @@
   font-size: 0.92em;
 }
 
+/* 等寬文字統一改用 CJK 友善的 Sarasa Mono TC Light：
+ * 涵蓋純文字（無語言）code fence、語法高亮區塊與行內 code（含 kbd / samp）。
+ * 置於 github-markdown 之後、同特異度 → 覆寫其預設等寬字堆疊；
+ * 仍可由 config.json 的 codeFont（apply:true）再進一步覆寫。 */
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: 'Sarasa Mono TC Light', 'Sarasa Mono TC', ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-weight: 300;
+}
+
 .markdown-body img {
   max-width: 100%;
 }
