@@ -81,6 +81,15 @@
 ### 5.3 閱讀風格 github / newsprint
 side tool `newspaper` toggle：啟用 / 停用 `md-skin-css`（viewer-newsprint.css，報紙襯線紙感）。記憶於 `localStorage('markdown-reader-style')`。
 
+**dark 下兩風同畫布（2026-07-17 收斂）**：newsprint 的 light 保留原本的紙感底（`#f3f2ee`），但 dark 原本是「暖調紙夜」`#1b1813`——它與 app 的 `.viewer-card`（`--card-bg: #0f1115`）不同色，文件會像一塊貼在冷色頁面上的暖色紙，接縫外露。現改為墨色（text / link / rule / quote）續留暖調襯線性格、**底色全部對齊 GitHub 閱讀風**：
+
+| token | 值 | 說明 |
+|---|---|---|
+| `--np-bg` | `var(--card-bg, #0f1115)` | 吃 app 的 `:root` token——自訂屬性會穿透 shadow DOM 邊界繼承進來，所以皮膚檔不必寫死任一支 app 的配色，維持家族六份 byte-identical |
+| `--np-code-bg` / `--np-thead-bg` / `--np-row-alt` | `#151b23` | ＝ github-markdown-css dark 的 canvas-subtle |
+
+結果：dark 下切換 github ↔ newsprint 只換字體與墨色，畫布不動。
+
 ### 5.4 i18n
 `i18n.js`：register 式、屬性綁定 `data-i18n` / `-html` / `-title` / `-doctitle`、程式內 `I18n.t(key, params)`。`DEFAULT='zh-Hant'`；初始語系解析順序 `?lang=` → `localStorage('lang')` → 瀏覽器語言 → `zh-Hant`。side tool `translate` 依註冊順序（zh-Hant → en → ja）循環，派發 `document` 事件 `i18n:changed`，控制器據此重繪由 JS 產生的動態文字。
 

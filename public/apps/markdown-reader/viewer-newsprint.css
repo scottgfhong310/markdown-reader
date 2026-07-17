@@ -7,7 +7,9 @@
  * 由 Typora 的 newsprint 主題（作者 typora.io / PT Serif）萃取改寫：
  *   - #write → .markdown-body；丟掉全部 Typora 編輯器外殼與 meyer reset。
  *   - 明暗以 host 屬性切換：JS 在 <zero-md> 上設 data-mode="light|dark"（= app 主題），
- *     :host 與 :host([data-mode="dark"]) 各帶一組 token；dark 為衍生的「暖調紙夜」。
+ *     :host 與 :host([data-mode="dark"]) 各帶一組 token；light 為 newsprint 原本的紙感，
+ *     dark 為「暖墨紙夜」——襯線字體與暖墨色留住 newsprint 性格，但畫布與各層底色
+ *     對齊 GitHub 閱讀風（見下方 dark 區塊註解）。
  *   - 字型來自 newsprint-fonts.css（PT Serif 自託管 + Noto Serif TC/JP），JS 懶載入主文件。
  */
 
@@ -32,17 +34,21 @@
 }
 
 :host([data-mode="dark"]) {
-  /* 衍生的暖調「紙夜」 */
-  --np-bg: #1b1813;
+  /* 「暖墨紙夜」：墨色（text / link / rule / quote）維持暖調襯線性格，
+   * 底色一律對齊 GitHub 閱讀風，兩風切換時畫布不變、只換字體與墨色。
+   *   --np-bg   ← app 的 --card-bg token（自訂屬性會穿透 shadow DOM 邊界繼承進來，
+   *               所以本檔不必寫死任一支 app 的配色；fallback 供未定義該 token 的宿主）。
+   *   #151b23   ＝ github-markdown-css dark 的 canvas-subtle（code / 表頭 / 斑馬列同用）。 */
+  --np-bg: var(--card-bg, #0f1115);
   --np-text: #e9e3d6;
   --np-muted: #9a9484;
   --np-link: #8fb7d6;
   --np-rule: rgba(233, 227, 214, .22);
   --np-quote-bd: rgba(233, 227, 214, .30);
   --np-quote-fg: #b6ae9d;
-  --np-code-bg: #26221b;
-  --np-thead-bg: #272219;
-  --np-row-alt: #211d16;
+  --np-code-bg: #151b23;
+  --np-thead-bg: #151b23;
+  --np-row-alt: #151b23;
   --np-sel-bg: #4a5a66;
   --np-sel-fg: #fff;
 }
