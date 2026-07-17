@@ -114,15 +114,14 @@
     document.head.appendChild(l);
   }
 
-  // 以 media 屬性啟用/停用皮膚層 link（clone 安全，切回 github 不需重新下載）
+  // 以 media 屬性啟用/停用皮膚層 link（clone 安全，切回 github 不需重新下載）。
+  // href 兩態都設：讓 link 永遠有 href 可 load——否則 github 風下無 href 的 stylesheet link 會讓
+  // zero-md 的 stamp() await 一個永不觸發的 load 事件而吊死首次 render（實測：無 href → load/error 皆不觸發；
+  // media="not all" ＋ 有 href → load 照樣觸發）。見「render 韌性」條與家族 §4.3。
   function applySkinToLink(link, style) {
     if (!link) return;
-    if (style === 'newsprint') {
-      link.setAttribute('href', './viewer-newsprint.css');
-      link.setAttribute('media', 'all');
-    } else {
-      link.setAttribute('media', 'not all');
-    }
+    link.setAttribute('href', './viewer-newsprint.css');
+    link.setAttribute('media', style === 'newsprint' ? 'all' : 'not all');
   }
 
   function setSkin(style) {
