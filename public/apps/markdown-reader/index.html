@@ -84,6 +84,16 @@
               href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.css" />
             <link rel="stylesheet" id="md-hl-css"
               href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" />
+            <!-- 列印保險：常駐 media="print" 的 light 版 github-markdown / highlight.js。
+                 列印時 setZeroMdTheme('light') 會把上面兩個 <link> 的 href 由 dark 換成 light，
+                 觸發一次 CDN 抓取；冷抓取／CDN 慢時 Chrome 可能在載完前就取樣列印、github 樣式
+                 瞬間全失（blockquote 退回瀏覽器預設 margin:40px/padding:0、表格失去框線等）。
+                 這兩條在頁面載入即抓好、螢幕不套（media=print）、列印必套，與 href 切換時序脫鉤。
+                 置於 #md-hl-css 之後、viewer.css 之前 → 列印時仍由 viewer.css/newsprint 覆寫。 -->
+            <link rel="stylesheet" media="print"
+              href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css" />
+            <link rel="stylesheet" media="print"
+              href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css" />
             <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
             <link rel="stylesheet" href="./viewer.css" />
             <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
