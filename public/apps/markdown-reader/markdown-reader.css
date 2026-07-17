@@ -226,6 +226,22 @@ body.is-empty .viewer-card {
   background-color: var(--border) !important;
 }
 
+/* 側欄篩選框（手刻極簡輸入框；家族 §5.12 filter-clear 的宿主） */
+.nav-filter-wrap { padding: 8px 16px 10px; }
+.nav-filter {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  height: 36px !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: .85rem;
+}
+.nav-filter:focus { outline: none; border-color: var(--accent) !important; box-shadow: none !important; }
+
 .file-meta {
   font-size: .72rem;
   color: var(--muted) !important;

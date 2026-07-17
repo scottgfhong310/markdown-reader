@@ -524,6 +524,18 @@
         '<span class="file-meta">' + L.formatSize(f.size) + '</span>' +
         '</a></li>';
     }).join('');
+    applyNavFilter();   // 重建清單後重新套用目前篩選（若有）
+  }
+
+  // 側欄篩選：依檔名子字串顯示/隱藏（不重建 DOM、保留 active）。清除鈕由共用 filter-clear utility 提供，
+  // 點清除＝清空並派發 input 事件，此函式一併重跑。
+  function applyNavFilter() {
+    var el = document.getElementById('nav-filter');
+    var q = el ? el.value.trim().toLowerCase() : '';
+    sideNav.querySelectorAll('li[data-name]').forEach(function (li) {
+      var name = (li.getAttribute('data-name') || '').toLowerCase();
+      li.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
+    });
   }
 
   function refreshFiles(selectName) {
@@ -706,6 +718,10 @@
   /* ---------- 事件繫結 ---------- */
 
   function bindEvents() {
+    // 側欄篩選框
+    var navFilter = document.getElementById('nav-filter');
+    if (navFilter) navFilter.addEventListener('input', applyNavFilter);
+
     // 側欄檔案點擊
     $(document).on('click', '#side-nav a.file-item', function (e) {
       e.preventDefault();

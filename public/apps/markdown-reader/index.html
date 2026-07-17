@@ -38,6 +38,7 @@
   <style id="print-runtime-style"></style>
 
   <link rel="stylesheet" href="./side-tool.css" />
+  <link rel="stylesheet" href="./filter-clear.css" />   <!-- 共用 utility：篩選框「清除」× 鈕（家族 §5.12） -->
 </head>
 
 <body class="is-empty">
@@ -51,6 +52,12 @@
     </li>
     <li>
       <div class="divider"></div>
+    </li>
+    <li>
+      <div class="nav-filter-wrap">
+        <input type="text" id="nav-filter" class="nav-filter browser-default" data-i18n-placeholder="side.filter"
+          placeholder="篩選檔名…" spellcheck="false" data-filter-clear />
+      </div>
     </li>
     <div id="side-nav"></div>
   </ul>
@@ -209,6 +216,7 @@
   <script src="./locales/en.js"></script>
   <script src="./locales/ja.js"></script>
 
+  <script src="./filter-clear.js"></script>   <!-- 共用 utility：篩選框清除鈕 -->
   <script src="./markdown-reader.js"></script>
 </body>
 
