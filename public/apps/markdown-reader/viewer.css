@@ -162,6 +162,18 @@
     background: #f6f8fa !important;
   }
 
+  /* 真正的捲動/裁切元素是內層 <code>，不是 <pre>：highlight.js 的 .hljs 設 display:block +
+   * overflow-x:auto，且內層 code 帶自己的 white-space:pre（不繼承 pre 的 pre-wrap）。只放開
+   * pre 不夠——長行在 code 層捲動、列印時被裁掉（實機互動 Chrome 有 navigator.clipboard、會
+   * 觸發 addCopyButtons 包 .code-wrap，此結構下尤其明顯；headless 無 clipboard、結構不同，故
+   * 之前的 headless PDF 測不出來）。一併把 code/.hljs 也放開。 */
+  .markdown-body pre code,
+  .markdown-body pre .hljs {
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+
   /* 複製鈕的定位容器：不要把邊框重複畫一層，也不要裁切 */
   .markdown-body .code-wrap {
     overflow: visible !important;
