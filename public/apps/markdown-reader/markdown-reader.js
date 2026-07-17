@@ -370,15 +370,29 @@
     });
   }
 
+  // zero-md 以 data-hash 記錄「已 stamp 進 .markdown-body 的原文」。比對目前 slot 原文的 hash，
+  // 即可判斷「這份內容是否真的已畫上去」——切換文件時舊內容的 hash 不同，不會誤判（§4.3）。
+  function bodyPainted() {
+    var sr = viewer.shadowRoot;
+    var body = sr && sr.querySelector('.markdown-body');
+    if (!body || !body.innerHTML || typeof viewer.hash !== 'function') return false;
+    return body.getAttribute('data-hash') === viewer.hash(mdSlot.textContent || '');
+  }
+
   // zero-md v3 的 render() 回 { body, styles }；冷啟動時 render() 的 promise 偶爾不 resolve
   // （內部等待樣式 <link> 的 load 事件，外部 CDN 慢/卡時就吊著）。用 timeout race 避免卡住整條鏈，
-  // 並重試到某次 render 確實回報 body:true 為止（避免畫面停在空白）。
+  // 並重試到內容確實畫上去為止（避免畫面停在空白）。
+  //
+  // 成功條件不能只看 res.body：那是 zero-md 的「原文 hash 與上次 stamp 不同＝這次有重畫」旗標，
+  // 不是「畫面上有內容」。慢的 render 若在 race 的 timeout 之後才 stamp（newsprint 皮膚 link 有 href
+  // 要等 load，冷啟動易超過 1200ms），它的 body:true 已被 race 丟棄，而後續每次 render 都因原文沒變
+  // 而回 body:false——只看 res.body 就會一路重試到上限，loading 蓋著不退。故一併查 shadow DOM 實況。
   function renderUntilBody(tries) {
     return Promise.race([
       viewer.render().then(function (res) { return res; }, function () { return null; }),
       new Promise(function (r) { setTimeout(function () { r('timeout'); }, 1200); })
     ]).then(function (res) {
-      var painted = res && res !== 'timeout' && res.body;
+      var painted = (res && res !== 'timeout' && res.body) || bodyPainted();
       if (painted || tries >= 12) return;
       return new Promise(function (r) { setTimeout(r, 120); })
         .then(function () { return renderUntilBody(tries + 1); });
