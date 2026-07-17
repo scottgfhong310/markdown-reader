@@ -110,6 +110,10 @@ side tool `newspaper` toggle：啟用 / 停用 `md-skin-css`（viewer-newsprint.
 - **列印字級放大**：side tool toggle → `md-print-scale` 寫 `@media print` 的字級 × `printScale`。
 - **`.no-print` / `.screen-only`**：螢幕可讀、列印 `display:none`。
 - 深底 inline-style SVG 在列印反白為淺底（屬性選擇器）；複製鈕列印隱藏。
+- **dark 列印黑底修正（2026-07-18，`markdown-reader.css` `@media print`）**：`:root { color-scheme: dark }` 讓瀏覽器把畫布塗成 UA 預設深色（Chrome ＝ `#121212`），是 UA 層畫布、`html{background:#fff!important}` 蓋不到 → dark 列印整頁黑底、只有內容區白。補 `:root{color-scheme:light!important}`＋關掉 `body` 主題過渡（`transition:none`，否則列印取樣在過渡起點抓到深色）。家族級說明見 DESIGN_GUIDELINES §5.1。
+- **等寬字列印用 Regular（`viewer.css` `@media print`）**：螢幕 Sarasa Light 印在紙上偏淡，列印改 `'等距更紗黑體 TC'`（＝Regular）＋`font-weight:400`（macOS 上英文名只配得到 Light 字面）。詳見 DESIGN_GUIDELINES §4.4。
+- **code block 列印（`viewer.css` `@media print`）**：`overflow:visible; white-space:pre-wrap`（螢幕的 `overflow-x:auto` 在紙上會**裁掉過長的行**、內容無聲遺失）＋細外框＋淡底。
+- **blockquote 列印縮排寫死＋常駐 `media="print"` github 樣式（防 CDN race）**：`beforeprint` 換 github 樣式表 href 觸發 CDN 重載，冷抓取時列印取樣抓到「github 全失」空窗、blockquote 退回瀏覽器預設「內縮貼線」。治本是 `index.html` 常駐兩條 `media="print"` 的 light github/hljs `<link>`（見 DESIGN_GUIDELINES §4.3）；`viewer.css` `@media print` 另把 blockquote 縮排寫死為第二層防禦。
 
 ### 5.7 右側工具列（13 顆）
 `menu · paste · mode · lang · style · format · orientation · print · print-scale · config · download · clear-page · clear`。以 side-tool.css 的 `.side-tools` flex 容器垂直居中堆疊，順序＝DOM 順序（家族 §5.5〔正統〕class 版）；開啟側欄時整排隱藏、收起再淡入。各 toggle 狀態分別持久化（見 §7）。
