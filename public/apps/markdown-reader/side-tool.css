@@ -14,7 +14,7 @@
 }
 
 /* flex 容器（家族 §5.5）：垂直居中、icon 由上而下排列，超出視窗高度時整欄捲動 */
-#side-tools {
+.side-tools {
   position: fixed;
   right: 12px;
   top: 50%;
@@ -30,7 +30,7 @@
   z-index: 1002;
   transition: opacity .15s ease;
 }
-#side-tools::-webkit-scrollbar { display: none; }   /* WebKit 隱藏卷軸 */
+.side-tools::-webkit-scrollbar { display: none; }   /* WebKit 隱藏卷軸 */
 
 .side-tool {
   flex: 0 0 auto;
@@ -51,7 +51,7 @@
 }
 
 /* 右側 file-list 開啟時，隱藏整排工具；收起後再淡入 */
-body.sidenav-open #side-tools {
+body.sidenav-open .side-tools {
   opacity: 0;
   pointer-events: none;
 }
@@ -95,11 +95,11 @@ body.sidenav-open #side-tools {
 }
 
 /* 第一顆是 app-icon 徽章 → 與第二顆間距加倍（把「品牌」和下面的「工具」視覺分區；同家族 color-palette，見 §5.5）*/
-#side-tools > .side-tool:first-child:has(.app-icon) {
+.side-tools > .side-tool:first-child:has(.app-icon) {
   margin-bottom: var(--tool-gap);   /* flex gap 之外再加一份＝加倍 */
 }
 
-/* 排列順序＝index.html 內 #side-tools 的 DOM 順序（flex column，免逐顆定位） */
+/* 排列順序＝index.html 內 .side-tools 的 DOM 順序（flex column，免逐顆定位） */
 
 /* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
 .side-tool.active {
@@ -114,7 +114,7 @@ body.sidenav-open #side-tools {
 
 /* 列印時隱藏所有工具 */
 @media print {
-  #side-tools,
+  .side-tools,
   .side-tool,
   #drop-overlay {
     display: none !important;
