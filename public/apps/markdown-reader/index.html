@@ -31,6 +31,11 @@
   <!-- zero-md v3：匯入並自動註冊 <zero-md> -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/zero-md@3?register"></script>
 
+  <!-- KaTeX 字型（@font-face 抽出版）必須由**主文件**宣告：zero-md 把 template 的樣式複製進
+       shadow root，而 shadow tree 內的 @font-face 不會註冊——只放 template 那份，公式會靜靜地
+       掉到 .katex 後備堆疊的 Times New Roman（實測同段公式 48.70px vs 45.99px）。版面規則仍留在
+       template 內的 katex.min.css（主文件 CSS 穿不進 shadow）。自託管版本見 ./katex/README.md。 -->
+  <link rel="stylesheet" href="./katex/katex-fonts.css" />
   <link rel="stylesheet" href="./markdown-reader.css" />
   <link rel="stylesheet" href="./thinking-dot.css" />   <!-- 共用 utility：Claude 風「思考中」脈動點 .thinking-dot -->
 
@@ -96,8 +101,11 @@
               href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css" />
             <!-- KaTeX 樣式（數學公式）：本 <template> 是「取代」預設，zero-md 內建 preset 的 katex.min.css
                  也一併被吃掉——不補這條，$…$／$$…$$／```math 會渲染成「KaTeX HTML ＋ MathML fallback」疊字。
-                 KaTeX 字色吃 currentColor，light/dark 與列印共用同一份。詳見家族 §4.3。 -->
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css" />
+                 KaTeX 字色吃 currentColor，light/dark 與列印共用同一份。
+                 樣式與字型為自託管（./katex/，vendored KaTeX 0.18.1 的 katex.min.css ＋ 20 個 woff2，
+                 見該資料夾 README）——不再向 CDN 要字型；但 KaTeX 引擎本身仍由 zero-md 自 CDN 載入，
+                 故這不等於離線可用。詳見家族 §4.3。 -->
+            <link rel="stylesheet" href="./katex/katex.min.css" />
             <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
             <link rel="stylesheet" href="./viewer.css" />
             <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
