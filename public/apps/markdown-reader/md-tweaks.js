@@ -131,13 +131,70 @@
     });
   }
 
+  /* 微調 4：把 LaTeX 區塊公式修成 zero-md（KaTeX）吃得下的 $$…$$。兩種輸入：
+   *   A) 正規 LaTeX 的 \[ … \]  →  $$ … $$（KaTeX 只認 $ 系列，方括號寫法原樣印出）
+   *   B) ChatGPT 匯出時反斜線被吃掉、只剩單獨成行的 [ … ]  →  同上
+   * B 是「猜」，故層層設限：整行剛好只有 [ / ]、區塊內不得有空行、40 行以內，
+   * 且內容要像數學（含 \巨集，或純 ASCII 且有 = ^ _ 其中之一）——一般段落／markdown
+   * 連結（[文字](url) 不會整行只有一個中括號）都碰不到。不符就原樣留著，不吞內容。
+   * 轉換的同時修三個被吃掉／會誤判的東西（只在區塊內）：
+   *   ① 行尾單一 \ → \\（換行；cases／bmatrix 各列靠它分行）
+   *   ② 數字後的 % → \%（% 在 LaTeX 是註解字元，5% 會吃掉整行後半；只認緊跟數字者，
+   *      不動可能是真註解的 %）
+   *   ③ 裸中文 → \text{…}（該行已有 \text{ 就不動，避免巢狀）
+   * 行內公式 \( … \) 亦轉成 $…$；但**不修**被吃掉的行內版——那已與一般括號無異（(P^5)），
+   * 猜了會誤傷正文，需人工補 $。跳過程式碼（遮罩）。冪等（轉完不再有 [ / ] 可觸發）。 */
+  function repairLatexMath(md) {
+    var CJK = /[㐀-鿿　-〿＀-￯]+/g;
+    function looksLikeMath(lines) {
+      if (!lines.length || lines.length > 40) return false;
+      var body = lines.join('\n');
+      if (!body.trim()) return false;
+      if (lines.some(function (l) { return !l.trim(); })) return false;   // 區塊內有空行 → 不是公式
+      if (lines.some(function (l) { return /^[ \t]*([-*+>#|]\s|\d+\.\s)/.test(l); })) return false;   // 像清單/表格/標題 → 不是公式
+      if (/\\[a-zA-Z]/.test(body)) return true;                          // 有 LaTeX 巨集
+      // 純 ASCII ＋ 至少一個算式符號 ＋ 至少一個字母或數字（P(Bull)-P(Bear)、Signal=0.75-0.05 這種）
+      return /^[\x20-\x7E\n]*$/.test(body) && /[=^_+\-*/|]/.test(body) && /[A-Za-z0-9]/.test(body);
+    }
+    function fixLine(l) {
+      l = l.replace(/(?<!\\)\\[ \t]*$/, '\\\\');                         // ① 行尾單一 \
+      l = l.replace(/(?<=\d)%/g, '\\%');                                 // ② 5% → 5\%
+      if (l.indexOf('\\text{') < 0) l = l.replace(CJK, function (m) { return '\\text{' + m + '}'; });
+      return l;
+    }
+    return withCodeMasked(md, function (s) {
+      s = s.replace(/\\\(([^\n]+?)\\\)/g, function (m, inner) { return '$' + inner.trim() + '$'; });
+      var lines = s.split('\n'), out = [], buf = null, open = -1;
+      for (var i = 0; i < lines.length; i++) {
+        var t = lines[i].trim();
+        if (buf === null) {
+          if (t === '[' || t === '\\[') { buf = []; open = i; }
+          else out.push(lines[i]);
+          continue;
+        }
+        if (t === ']' || t === '\\]') {
+          if (looksLikeMath(buf)) out.push('$$', buf.map(fixLine).join('\n'), '$$');
+          else out.push(lines[open], buf.join('\n'), lines[i]);           // 不像公式 → 原樣還原
+          buf = null;
+          continue;
+        }
+        buf.push(lines[i]);
+        if (buf.length > 40) { out.push(lines[open]); out = out.concat(buf); buf = null; }   // 沒收尾 → 放棄
+      }
+      if (buf !== null) { out.push(lines[open]); out = out.concat(buf); }  // 檔尾未收尾：原樣吐回
+      return out.join('\n');
+    });
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
+  // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
   var TWEAKS = [
     inlineTagList,
     bareTagList,
     headerizeLabels,
     spaceBareTilde,
-    spaceCjkBold
+    spaceCjkBold,
+    repairLatexMath
   ];
 
   function apply(md) {
