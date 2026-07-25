@@ -43,6 +43,21 @@
   font-family: 'Sarasa Mono TC Light', 'Sarasa Mono TC', ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+/* 數學公式（KaTeX）裡的中文（\text{中文}）：KaTeX 把 CJK 標成 .cjk_fallback，但字型堆疊
+ * 仍是 .katex 的 KaTeX_Main / Times New Roman / serif——三者都沒有中文字，於是掉到瀏覽器
+ * 的 generic serif（macOS＝宋體），不跟著內文走（github 風的黑體段落裡會卡一塊宋體）。
+ * 這裡直接指定堆疊，讓它與當前閱讀風同調：
+ *   - newsprint 風：皮膚層（viewer-newsprint.css）在 :host 定義 --np-serif → 吃襯線組。
+ *   - github 風：皮膚層以 media="not all" 停用、--np-serif 未定義 → 用後備的系統無襯線
+ *     （＝github-markdown 的內文堆疊）。切風格自動跟著換，不需 JS。
+ * 注意不能寫 font-family: inherit——.cjk_fallback 的父層在 .katex 內，inherit 拿到的是
+ * KaTeX_Main（實測），等於沒改。數學符號仍用 KaTeX 自家字型：其 metrics 決定上下標位移
+ * 與大括號拼接，不可用 CSS 換掉。config 的 viewFont 覆寫不會傳到這裡（已知限制、預設
+ * apply:false）。家族 §4.3。 */
+.katex .cjk_fallback {
+  font-family: var(--np-serif, -apple-system, 'system-ui', 'Segoe UI', 'Noto Sans', 'PingFang TC', 'Microsoft JhengHei', sans-serif);
+}
+
 .markdown-body img {
   max-width: 100%;
 }
