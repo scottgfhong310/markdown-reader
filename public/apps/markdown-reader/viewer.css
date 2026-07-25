@@ -53,9 +53,14 @@
  * 注意不能寫 font-family: inherit——.cjk_fallback 的父層在 .katex 內，inherit 拿到的是
  * KaTeX_Main（實測），等於沒改。數學符號仍用 KaTeX 自家字型：其 metrics 決定上下標位移
  * 與大括號拼接，不可用 CSS 換掉。config 的 viewFont 覆寫不會傳到這裡（已知限制、預設
- * apply:false）。家族 §4.3。 */
+ * apply:false）。家族 §4.3。
+ *
+ * font-size 收 0.9em：同一級數下 CJK 字面填滿全形字身、拉丁字母只到 cap-height（約 0.7em），
+ * 並排時中文會明顯「大一號」。降到 0.9em 視覺上才與公式裡的拉丁字齊（實測 21.78px → 19.60px，
+ * 基線只位移 0.5px、不影響版面）。要更小可再調到 0.85em。 */
 .katex .cjk_fallback {
   font-family: var(--np-serif, -apple-system, 'system-ui', 'Segoe UI', 'Noto Sans', 'PingFang TC', 'Microsoft JhengHei', sans-serif);
+  font-size: 0.9em;
 }
 
 .markdown-body img {
