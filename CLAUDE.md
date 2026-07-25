@@ -31,8 +31,11 @@ public/upload/markdown-reader/      # 上傳檔案（內容不進版控）
 icons/                              # App icon：M＋箭頭雙層 mask 徽章、favicon set、PWA manifest
 ```
 
-> **App icon 有下游共用**：`icons/`（「M＋箭頭」品牌圖）與 [`local-reader`](https://github.com/scottgfhong310/local-reader) 共用一組——
-> local-reader 的 `icons/` 是**從這裡複製**的（它只另改 `manifest.json` 的 name/start_url/scope）。**在這裡換圖時，記得一併同步 local-reader 那份**（兩支 markdown 家族 app 共用同一品牌識別，owner 決定）。
+> **App icon 有下游共用**：`icons/`（「M＋箭頭」品牌圖）與 [`markdown-library`](https://github.com/scottgfhong310/markdown-library) 共用一組——
+> markdown-library 的 `icons/` 是**從這裡複製**的（它只另改 `manifest.json` 的 name/start_url/scope）。**在這裡換圖時，記得一併同步 markdown-library 那份**（兩支 markdown 家族 app 共用同一品牌識別，owner 決定）。
+>
+> **`local-reader` 已不在下游**：2026-07-22 起它改用**自己的「資料夾＋目錄樹」品牌圖**（權威版在 local-reader repo，見其「複製件登記」）；
+> 幾何語法仍沿用 M＋箭頭系統（open-polyline、stroke 10、圓端點、tile 漸層/圓角、綠 `#5fcfa0`）故同血緣，但**換圖時不再需要同步它**。
 
 ## 複製件登記（共用件改版時靠這份找同步點）
 
@@ -45,7 +48,7 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 | `filter-clear.css`、`filter-clear.js` | 家族 §5.12，`local-reader` 那份為準（byte-identical） |
 | `public/lib/adp-col/mdFormater.js` | adp-col 孵化器產出（與 `markdown-library` 同份 byte-identical） |
 | `viewer.css`、`viewer-newsprint.css`、`newsprint-fonts.css`、`fonts/pt-serif/` | **本 app 為源頭**（zero-md 內容樣式層）；`local-reader` 自此複製、byte-identical（`markdown-library` 的 `viewer.css`/`newsprint-fonts.css` 已加內容相依版型而分岔） |
-| `icons/`（「M＋箭頭」品牌圖 + favicon/PWA） | **本 app 為源頭**；`local-reader` / `markdown-library` 自此複製、byte-identical（換圖時一併同步下游） |
+| `icons/`（「M＋箭頭」品牌圖 + favicon/PWA） | **本 app 為源頭**；`markdown-library` 自此複製、byte-identical（換圖時一併同步下游，`manifest.json` 各自有 name/start_url/scope 故不同步）。`local-reader` **2026-07-22 起已分家**、改用自有品牌圖，不再是下游 |
 
 ## 執行 / 驗證
 
