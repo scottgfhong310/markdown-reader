@@ -297,3 +297,95 @@ body.is-empty .viewer-card {
      其深色面板偏移到右緣外，左緣+陰影就在每頁右側畫出一條直線。列印一律隱藏。 */
   .sidenav, .sidenav-overlay { display: none !important; }
 }
+
+/* ===== 設定／貼上面板（Materialize modal） =====
+ * 2026-07-26 由 side-tool.css 移入：那是家族共用件（byte-identical 同步），
+ * 只該放側鍵元件本身；這些 modal 皮膚是本 app 專屬，屬於這裡。
+ * 載入順序：side-tool.css 在本檔之後載入，但兩邊選擇器不重疊，移入不改變表現。
+ */
+/* ===== 列印設定面板（config icon 開啟的 Materialize modal；隨 light / dark 變數換色） ===== */
+#config-modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 540px;
+  width: 92%;
+}
+
+#config-modal .modal-content { padding: 22px 26px; }
+#config-modal h5 { margin: 0 0 6px; font-weight: 600; color: var(--text); }
+#config-modal .config-hint { margin: 0 0 14px; font-size: .85rem; color: var(--muted); }
+#config-modal .config-list { margin: 0; }
+#config-modal .config-list li { padding: 7px 0; }
+
+/* Materialize filled-in checkbox：文字 / 勾選色改用主題變數 */
+#config-modal .config-list label,
+#config-modal .config-list label span { color: var(--text); }
+#config-modal .config-list label span { line-height: 1.45; }
+#config-modal [type="checkbox"].filled-in:checked + span::after {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+#config-modal .modal-footer {
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+#config-modal .modal-footer .btn-flat { color: var(--accent); }
+
+@media print {
+  #config-modal, #paste-modal, .modal-overlay { display: none !important; }
+}
+
+/* ===== 貼上 Markdown 文字面板（paste icon 開啟的 Materialize modal） ===== */
+#paste-modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 720px;
+  width: 94%;
+}
+
+#paste-modal .modal-content { padding: 22px 26px; }
+#paste-modal h5 { margin: 0 0 6px; font-weight: 600; color: var(--text); }
+#paste-modal .paste-hint { margin: 0 0 12px; font-size: .85rem; color: var(--muted); }
+#paste-modal .paste-hint code { font-size: .8rem; }
+
+/* 貼上區：等寬、固定高度可捲動（大量貼上不撐爆 modal） */
+#paste-modal .paste-text {
+  width: 100%;
+  height: 42vh;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .88rem;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+#paste-modal .paste-text:focus { outline: none; border-color: var(--accent); }
+
+/* 檔名即時預覽：有標題顯示推導檔名；無標題顯示提示（warn 色） */
+#paste-modal .paste-name-row {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-top: 10px; min-width: 0;
+}
+#paste-modal .paste-name-label { flex: 0 0 auto; font-size: .8rem; color: var(--muted); }
+#paste-modal .paste-name {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: .85rem; color: var(--accent);
+}
+#paste-modal .paste-name.no-header { color: #ff6e6e; font-family: inherit; }
+
+#paste-modal .modal-footer {
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+#paste-modal .modal-footer .btn-flat { color: var(--accent); }
+#paste-modal .modal-footer .btn-flat.disabled { color: var(--muted); }

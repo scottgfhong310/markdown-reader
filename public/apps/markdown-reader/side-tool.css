@@ -1,6 +1,20 @@
-/* markdown-reader 右側浮動工具列
- * 沿用 mdx/correction 的 .side-tool 概念，改為垂直一排圓形按鈕，
- * 顏色以 CSS 變數驅動，可隨 light / dark 主題切換。
+/* side-tool.css — 右側浮動工具列（家族招牌元件）
+ *
+ * ⚠️ **本檔是家族權威版**（比照 materialize-dark.css）。各 app 的
+ *    public/apps/<name>/side-tool.css 是它的 **byte-identical 複製件**——
+ *    要改就改這裡，再同步所有複製點；**不要在 app 內就地改**。
+ *    稽核指令見 DESIGN_GUIDELINES §5.5（此處不寫 shell glob——glob 內的星號斜線
+ *    會提前關閉 CSS 註解，整份樣式表從那裡開始解析失敗；2026-07-26 實際踩過）。
+ *
+ * ⚠️ **本檔只放「側鍵元件本身」**。app 專屬的東西——設定 modal 的皮膚、
+ *    某支 app 才有的面板、drop-overlay……——一律放各 app 自己的 <name>.css。
+ *    2026-07-26 收斂前，7 支 app 的複製件夾帶了 #config-modal／#paste-modal 的樣式
+ *    （其中 4 支的 HTML 根本沒有那個 modal，是複製時整包帶進來的死 CSS），
+ *    正是同一支「共用件」長出 7 個不同 md5 的主因。
+ *
+ * 規範：DESIGN_GUIDELINES §5.5。版面用 .side-tools flex 容器自動堆疊
+ *      （不綁固定 id 數量／順序），顏色以 CSS 變數驅動、隨 light / dark 切換。
+ *      消費端須自備 --tool-fg / --tool-bg / --border / --accent 四個 token。
  */
 
 :root {
@@ -13,7 +27,6 @@
   :root { --tool-size: 40px; --tool-gap: 6px; }
 }
 
-/* flex 容器（家族 §5.5）：垂直居中、icon 由上而下排列，超出視窗高度時整欄捲動 */
 .side-tools {
   position: fixed;
   right: 12px;
@@ -50,7 +63,7 @@
   user-select: none;
 }
 
-/* 右側 file-list 開啟時，隱藏整排工具；收起後再淡入 */
+/* 側欄（sidenav / 檔案清單 / 匯出檔清單）開啟時，隱藏整排工具；收起後再淡入 */
 body.sidenav-open .side-tools {
   opacity: 0;
   pointer-events: none;
@@ -70,8 +83,22 @@ body.sidenav-open .side-tools {
   line-height: 1;
 }
 
-/* #setting-menu 用 app icon（品牌標記）取代 Material Icon：拆成兩層 mask 疊圖（同 .glyph 缺字的做法）——
- * M 字母隨 --tool-fg 跟著 light/dark 主題變色；箭頭固定品牌綠，兩層 viewBox 一致、疊起來自動對齊。 */
+/* toggle 開啟狀態以 accent 色標示（如閱讀風格、格式化開關） */
+.side-tool.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 警示鍵（清除頁面／清空資料夾）hover 轉紅（§5.5） */
+#setting-clear:hover,
+#setting-clear-downloads:hover {
+  color: #ff6e6e;
+}
+
+/* ===== App icon 徽章（§5.5「（甲）」；沒用到的 app 這幾條不會命中） =====
+ * 雙色標記拆成兩層同 viewBox 的 mask 疊圖（同 .glyph 缺字的手法）：
+ * 字母層隨 --tool-fg 跟著 light/dark 變色，另一層固定品牌色。
+ * 單張彩色 tile 的 app 則在自己的 <name>.css 覆寫 background（見 §5.5 變體）。 */
 .side-tool .app-icon {
   position: relative;
   display: inline-block;
@@ -88,122 +115,21 @@ body.sidenav-open .side-tools {
 .side-tool .app-icon-letter { background-color: var(--tool-fg); }
 .side-tool .app-icon-arrow  { background-color: #5fcfa0; }   /* 品牌綠，不隨主題變 */
 
-/* #setting-menu：方形圓角徽章（squircle，比例同 markdown-icon.svg 本身的 22.5% 圓角），
- * 取代其餘按鈕的正圓，不被圓約束；底色／邊框仍沿用主題變數，隨 light/dark 自動切換。 */
+/* 承載徽章的那顆鍵：方形圓角（squircle）取代正圓，不被圓約束；
+ * 底色／邊框仍沿用主題變數，隨 light/dark 自動切換。 */
 #setting-menu {
   border-radius: 22%;
 }
 
-/* 第一顆是 app-icon 徽章 → 與第二顆間距加倍（把「品牌」和下面的「工具」視覺分區；同家族 color-palette，見 §5.5）*/
+/* 第一顆是 app-icon 徽章 → 與第二顆間距加倍（把「品牌」和下面的「工具」視覺分區） */
 .side-tools > .side-tool:first-child:has(.app-icon) {
   margin-bottom: var(--tool-gap);   /* flex gap 之外再加一份＝加倍 */
-}
-
-/* 排列順序＝index.html 內 .side-tools 的 DOM 順序（flex column，免逐顆定位） */
-
-/* toggle 開啟狀態（目前用於文體格式化）以 accent 色標示 */
-.side-tool.active {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-/* 清空鍵帶一點警示色 */
-#setting-clear:hover {
-  color: #ff6e6e;
 }
 
 /* 列印時隱藏所有工具 */
 @media print {
   .side-tools,
-  .side-tool,
-  #drop-overlay {
+  .side-tool {
     display: none !important;
   }
 }
-
-/* ===== 列印設定面板（config icon 開啟的 Materialize modal；隨 light / dark 變數換色） ===== */
-#config-modal {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  max-width: 540px;
-  width: 92%;
-}
-
-#config-modal .modal-content { padding: 22px 26px; }
-#config-modal h5 { margin: 0 0 6px; font-weight: 600; color: var(--text); }
-#config-modal .config-hint { margin: 0 0 14px; font-size: .85rem; color: var(--muted); }
-#config-modal .config-list { margin: 0; }
-#config-modal .config-list li { padding: 7px 0; }
-
-/* Materialize filled-in checkbox：文字 / 勾選色改用主題變數 */
-#config-modal .config-list label,
-#config-modal .config-list label span { color: var(--text); }
-#config-modal .config-list label span { line-height: 1.45; }
-#config-modal [type="checkbox"].filled-in:checked + span::after {
-  border-color: var(--accent);
-  background-color: var(--accent);
-}
-
-#config-modal .modal-footer {
-  background: transparent;
-  border-top: 1px solid var(--border);
-}
-#config-modal .modal-footer .btn-flat { color: var(--accent); }
-
-@media print {
-  #config-modal, #paste-modal, .modal-overlay { display: none !important; }
-}
-
-/* ===== 貼上 Markdown 文字面板（paste icon 開啟的 Materialize modal） ===== */
-#paste-modal {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  max-width: 720px;
-  width: 94%;
-}
-
-#paste-modal .modal-content { padding: 22px 26px; }
-#paste-modal h5 { margin: 0 0 6px; font-weight: 600; color: var(--text); }
-#paste-modal .paste-hint { margin: 0 0 12px; font-size: .85rem; color: var(--muted); }
-#paste-modal .paste-hint code { font-size: .8rem; }
-
-/* 貼上區：等寬、固定高度可捲動（大量貼上不撐爆 modal） */
-#paste-modal .paste-text {
-  width: 100%;
-  height: 42vh;
-  resize: vertical;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: .88rem;
-  line-height: 1.6;
-  box-sizing: border-box;
-}
-#paste-modal .paste-text:focus { outline: none; border-color: var(--accent); }
-
-/* 檔名即時預覽：有標題顯示推導檔名；無標題顯示提示（warn 色） */
-#paste-modal .paste-name-row {
-  display: flex; align-items: baseline; gap: 10px;
-  margin-top: 10px; min-width: 0;
-}
-#paste-modal .paste-name-label { flex: 0 0 auto; font-size: .8rem; color: var(--muted); }
-#paste-modal .paste-name {
-  flex: 1 1 auto; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: .85rem; color: var(--accent);
-}
-#paste-modal .paste-name.no-header { color: #ff6e6e; font-family: inherit; }
-
-#paste-modal .modal-footer {
-  background: transparent;
-  border-top: 1px solid var(--border);
-}
-#paste-modal .modal-footer .btn-flat { color: var(--accent); }
-#paste-modal .modal-footer .btn-flat.disabled { color: var(--muted); }
