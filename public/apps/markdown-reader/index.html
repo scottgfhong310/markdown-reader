@@ -94,6 +94,10 @@
               href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css" />
             <link rel="stylesheet" media="print"
               href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css" />
+            <!-- KaTeX 樣式（數學公式）：本 <template> 是「取代」預設，zero-md 內建 preset 的 katex.min.css
+                 也一併被吃掉——不補這條，$…$／$$…$$／```math 會渲染成「KaTeX HTML ＋ MathML fallback」疊字。
+                 KaTeX 字色吃 currentColor，light/dark 與列印共用同一份。詳見家族 §4.3。 -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css" />
             <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
             <link rel="stylesheet" href="./viewer.css" />
             <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
