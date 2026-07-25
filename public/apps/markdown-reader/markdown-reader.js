@@ -386,13 +386,51 @@
   // 不是「畫面上有內容」。慢的 render 若在 race 的 timeout 之後才 stamp（newsprint 皮膚 link 有 href
   // 要等 load，冷啟動易超過 1200ms），它的 body:true 已被 race 丟棄，而後續每次 render 都因原文沒變
   // 而回 body:false——只看 res.body 就會一路重試到上限，loading 蓋著不退。故一併查 shadow DOM 實況。
+  // hidden 分頁不會完成 render：zero-md 的 render() 內有 await this.tick()（＝requestAnimationFrame），
+  // 而瀏覽器在背景分頁停掉 rAF → body 永遠 stamp 不上（2026-07-25 插樁實測：stamp(styles) 39ms 完成、
+  // parse 1ms 完成，stamp(body) 從未開始）。因此：① 每次嘗試前先等分頁可見，重試次數不被背景消耗；
+  // ② 萬一仍用盡，掛一次性 visibilitychange，回到前景時補畫一輪——否則「背景分頁開文件、超過約 17 秒
+  // 才切回來」會停在 #loading 蓋著的空白畫面，非重新整理不可。見家族 §4.3。
+  function whenRenderable() {
+    if (!document.hidden) return Promise.resolve();
+    return new Promise(function (r) {
+      var done = false;
+      var fin = function () {
+        if (done) return;
+        done = true;
+        document.removeEventListener('visibilitychange', h);
+        r();
+      };
+      var h = function () { if (!document.hidden) fin(); };
+      document.addEventListener('visibilitychange', h);
+      // 保險：若這個執行環境即使 hidden 也照樣觸發 rAF（例如某些內嵌檢視器），就不要白等可見性
+      requestAnimationFrame(fin);
+    });
+  }
+
+  var visibilityRetryArmed = false;
+  function armVisibilityRetry() {
+    if (visibilityRetryArmed) return;
+    visibilityRetryArmed = true;
+    var h = function () {
+      if (document.hidden) return;
+      document.removeEventListener('visibilitychange', h);
+      visibilityRetryArmed = false;
+      renderUntilBody(0);
+    };
+    document.addEventListener('visibilitychange', h);
+  }
+
   function renderUntilBody(tries) {
-    return Promise.race([
-      viewer.render().then(function (res) { return res; }, function () { return null; }),
-      new Promise(function (r) { setTimeout(function () { r('timeout'); }, 1200); })
-    ]).then(function (res) {
+    return whenRenderable().then(function () {
+      return Promise.race([
+        viewer.render().then(function (res) { return res; }, function () { return null; }),
+        new Promise(function (r) { setTimeout(function () { r('timeout'); }, 1200); })
+      ]);
+    }).then(function (res) {
       var painted = (res && res !== 'timeout' && res.body) || bodyPainted();
-      if (painted || tries >= 12) return;
+      if (painted) return;
+      if (tries >= 12) { armVisibilityRetry(); return; }
       return new Promise(function (r) { setTimeout(r, 120); })
         .then(function () { return renderUntilBody(tries + 1); });
     });
