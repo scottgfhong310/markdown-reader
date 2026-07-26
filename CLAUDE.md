@@ -14,7 +14,7 @@
 
 ```
 app.js                              # Express 入口：port 3000；/ → 302 /apps/markdown-reader/
-routes/upload.js                    # POST /api/upload?folder=markdown-reader（共用最小版；含檔名消毒 sanitizeUploadName，§3.4）
+routes/upload.js                    # POST /api/upload?folder=markdown-reader（家族共用最小版：權威版＝ nodeapp-webapp-family/routes-upload.js，byte-identical；含檔名消毒 sanitizeUploadName，§3.4）
 routes/markdown-reader.js           # GET /files、POST /clear
 public/apps/markdown-reader/        # 前端（服務於 /apps/markdown-reader/）
 ├─ index.html · markdown-reader.css · markdown-reader.js · markdown-reader-lib.js
