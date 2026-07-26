@@ -23,7 +23,7 @@ public/apps/markdown-reader/        # 前端（服務於 /apps/markdown-reader/�
 ├─ viewer.css                       # zero-md shadow DOM 內容樣式（github 風通用；code 複製鈕；列印 SVG 深→淺反轉）
 ├─ viewer-newsprint.css             # newsprint 閱讀風皮膚層（疊在 github-markdown 之上）
 ├─ newsprint-fonts.css · fonts/pt-serif/   # PT Serif（自託管）+ Noto Serif TC/JP（懶載）
-├─ side-tool.css · i18n.js · locales/{zh-Hant,en,ja}.js
+├─ side-tool.css · side-tool.js · i18n.js · locales/{zh-Hant,en,ja}.js   # （樣式＋行為：check 微回饋、矮視窗溢出收納；權威版＝家族 repo，§5.5）
 ├─ thinking-dot.css                 # 共用載入點 utility（權威版＝獨立 repo thinking-dot 的副本；.thinking-dot + @keyframes thinking-pulse）
 ├─ filter-clear.css · filter-clear.js  # §5.12 篩選框「清除」× 鈕 utility（自 local-reader 複製、byte-identical）；宿主＝側欄 #nav-filter
 public/lib/adp-col/mdFormater.js    # 文體格式化器（toggle 開啟時套用）
