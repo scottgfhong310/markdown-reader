@@ -41,7 +41,7 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 
 | 檔案 | 來源 / 權威版本 |
 |---|---|
-| `i18n.js` | 家族共用 i18n 引擎（各 app 同款；改版需同步全部複製點） |
+| `i18n.js` | 家族 repo `nodeapp-webapp-family/i18n.js`（權威版，byte-identical；`locales/*.js` 各 app 自維護） |
 | `side-tool.css` | 家族 §5.5〔正統〕flex `.side-tools` 版 |
 | `thinking-dot.css` | 獨立 repo `thinking-dot` 那份為準（家族 §4.6，byte-identical） |
 | `md-tweaks.js` | `markdown-library` 那份為準（byte-identical） |
