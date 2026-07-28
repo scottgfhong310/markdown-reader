@@ -423,6 +423,10 @@
 
   function renderUntilBody(tries) {
     return whenRenderable().then(function () {
+      // 首次 render 前把 ELK 排版載入器裝進 zero-md（必須早於第一張 mermaid 圖——
+      // zero-md 的 mermaid 是模組級單例，畫過一張就固定了）。裝不上就照舊走 dagre。
+      return window.MermaidElk ? window.MermaidElk.install(viewer) : null;
+    }).then(function () {
       return Promise.race([
         viewer.render().then(function (res) { return res; }, function () { return null; }),
         new Promise(function (r) { setTimeout(function () { r('timeout'); }, 1200); })

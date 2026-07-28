@@ -41,6 +41,7 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 
 | 檔案 | 來源 / 權威版本 |
 |---|---|
+| `mermaid-elk.js` | 家族 repo 根那份為準（byte-identical；zero-md 的 mermaid 改走 ELK 排版，見家族 §4.3。**控制器須在首次 `render()` 前呼叫 `MermaidElk.install(viewer)`**——已插在 `renderUntilBody()` 內） |
 | `i18n.js` | 家族 repo `nodeapp-webapp-family/i18n.js`（權威版，byte-identical；`locales/*.js` 各 app 自維護） |
 | `side-tool.css` | 家族 §5.5〔正統〕flex `.side-tools` 版 |
 | `thinking-dot.css` | 獨立 repo `thinking-dot` 那份為準（家族 §4.6，byte-identical） |
