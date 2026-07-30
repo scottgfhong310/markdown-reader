@@ -62,6 +62,5 @@ I18n.register('zh-Hant', {
   'toast.clearFail': '清空失敗：{m}',
   'toast.listFail': '讀取檔案清單失敗：{m}',
   'confirm.clear': '確定要清空 /upload/markdown-reader 下的所有檔案嗎？此動作無法復原。',
-  'md.loading': '# Loading…\n\n正在載入 **{n}**',
   'md.loadFail': '# 載入失敗\n\n- 檔案：`{n}`\n- 錯誤：`{e}`'
 }, '繁體中文');

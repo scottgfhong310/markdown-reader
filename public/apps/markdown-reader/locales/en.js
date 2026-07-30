@@ -62,6 +62,5 @@ I18n.register('en', {
   'toast.clearFail': 'Clear failed: {m}',
   'toast.listFail': 'Failed to load file list: {m}',
   'confirm.clear': 'Empty all files in /upload/markdown-reader? This cannot be undone.',
-  'md.loading': '# Loading…\n\nLoading **{n}**',
   'md.loadFail': '# Load failed\n\n- file: `{n}`\n- error: `{e}`'
 }, 'English');

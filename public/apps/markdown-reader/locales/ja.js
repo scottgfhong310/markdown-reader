@@ -62,6 +62,5 @@ I18n.register('ja', {
   'toast.clearFail': '削除に失敗：{m}',
   'toast.listFail': 'ファイル一覧の取得に失敗：{m}',
   'confirm.clear': '/upload/markdown-reader 内のすべてのファイルを削除しますか？元に戻せません。',
-  'md.loading': '# Loading…\n\n**{n}** を読み込み中',
   'md.loadFail': '# 読み込み失敗\n\n- ファイル：`{n}`\n- エラー：`{e}`'
 }, '日本語');
