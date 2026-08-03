@@ -53,6 +53,7 @@ I18n.register('zh-Hant', {
   'toast.styleNewsprint': '已切換為報紙閱讀風',
   'toast.styleGithub': '已切換為 GitHub 閱讀風',
   'toast.uploaded': '已上傳：{n}',
+  'toast.uploadedRenamed': '同名已存在，已存為：{n}',
   'toast.uploadFail': '上傳失敗：{n}（{m}）',
   'toast.notReadable': '請拖入 markdown / 文字檔（.md / .txt …）',
   'toast.downloaded': '已下載：{n}',

@@ -53,6 +53,7 @@ I18n.register('ja', {
   'toast.styleNewsprint': '新聞紙スタイルに切り替えました',
   'toast.styleGithub': 'GitHub スタイルに切り替えました',
   'toast.uploaded': 'アップロード完了：{n}',
+  'toast.uploadedRenamed': '同名のため {n} として保存しました',
   'toast.uploadFail': 'アップロード失敗：{n}（{m}）',
   'toast.notReadable': 'markdown / テキストファイルをドロップしてください（.md / .txt …）',
   'toast.downloaded': 'ダウンロード：{n}',

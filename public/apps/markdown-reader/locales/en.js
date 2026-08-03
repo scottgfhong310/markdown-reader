@@ -53,6 +53,7 @@ I18n.register('en', {
   'toast.styleNewsprint': 'Switched to Newsprint reading style',
   'toast.styleGithub': 'Switched to GitHub reading style',
   'toast.uploaded': 'Uploaded: {n}',
+  'toast.uploadedRenamed': 'Name already exists — saved as: {n}',
   'toast.uploadFail': 'Upload failed: {n} ({m})',
   'toast.notReadable': 'Please drop markdown / text files (.md / .txt …)',
   'toast.downloaded': 'Downloaded: {n}',
