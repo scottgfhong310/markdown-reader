@@ -157,10 +157,25 @@
  * <span class="nowrap">摩訶<span class="glyph" style="--g:url('…T022132.svg')"></span>尼</span> */
 .markdown-body .nowrap { white-space: nowrap; }
 
+/* .note 刻意不設固定寬度：它是行內小註，寬度隨字數而變。
+ * 舊 mdx／markdown-library 的 width:115px 已被淘汰——現行做法是由作者在內容長度
+ * 約 1/2 處手動插 <br/> 斷行（調適方便）。**不要「補回」那條寬度**：
+ * 硬寬度會與手插的 <br/> 疊加，把兩行變成三、四行；px 也不跟著列印字級放大走。
+ *
+ * text-wrap: balance 把「已經折行」的小註各行長度自動勻分——那正是手插 <br/> 想達成的
+ * 效果。對只有一行的小註完全無作用，故零風險；不支援的瀏覽器只是不勻分，不會壞。
+ *
+ * --note-max 預設 none（不設上限）。實測現有 255 條小註（472 個半行）字數極不均：
+ * 整條中位 10 字、長尾逾 2000 字，而沒有寬度時長註本來就會在段落寬度處自然折行。
+ * 任何固定上限都會把那些長註壓成又窄又高的一柱（16em 時 44% 的半行會被再次斷開），
+ * 所以不預設開啟。要讓「中等長度的小註自動分兩行、免手插 <br/>」時，
+ * 於容器（或該條 .note）設 --note-max 即可，例：--note-max: 14em。
+ * 一律用 em 不用 px —— em 會跟著自身字級走，列印放大與 config 換字型時才不會走樣。 */
 .markdown-body .note {
   display: inline-block;
   font-size: 0.7em;
-  width: 115px;
+  max-width: var(--note-max, none);
+  text-wrap: balance;
   vertical-align: middle;
   line-height: 1.2;
   margin: 0.25em;
