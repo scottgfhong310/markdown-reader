@@ -48,7 +48,7 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 | `md-tweaks.js` | `markdown-library` 那份為準（byte-identical） |
 | `filter-clear.css`、`filter-clear.js` | 家族 §5.12，`local-reader` 那份為準（byte-identical） |
 | `public/lib/adp-col/mdFormater.js` | adp-col 孵化器產出（與 `markdown-library` 同份 byte-identical） |
-| `viewer.css`、`viewer-newsprint.css`、`newsprint-fonts.css`、`fonts/pt-serif/` | **本 app 為源頭**（zero-md 內容樣式層）；`local-reader` 自此複製、byte-identical（`markdown-library` 的 `viewer.css`/`newsprint-fonts.css` 仍分岔，但只剩 `.note` 的 `width:115px` 與區塊順序——`right-table-wrap` 已於 2026-08-03 補齊三支一致） |
+| `viewer.css`、`viewer-newsprint.css`、`newsprint-fonts.css`、`fonts/pt-serif/` | **本 app 為源頭**（zero-md 內容樣式層）；`local-reader` 自此複製、byte-identical。`markdown-library` 的 `viewer.css` **2026-08-03 起規則集合已與本份完全相同**（`right-table-wrap` 與 `.note` 的 `width:115px` 兩次收斂），**僅存區塊順序與註解措辭之別**（唯一實質差異是列印段一句註解各自指向自己的控制器 `markdown-reader.js`／`markdown-library.js`，屬正常）——稽核用「忽略註解＋排序後 diff」比對，勿再當內容分岔。`newsprint-fonts.css` 字型子集仍不同 |
 | `icons/`（「M＋箭頭」品牌圖 + favicon/PWA） | **本 app 為源頭**；`markdown-library` 自此複製、byte-identical（換圖時一併同步下游，`manifest.json` 各自有 name/start_url/scope 故不同步）。`local-reader` **2026-07-22 起已分家**、改用自有品牌圖，不再是下游 |
 
 ## 執行 / 驗證
