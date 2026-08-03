@@ -67,6 +67,61 @@
   max-width: 100%;
 }
 
+/* ===== 內容相依版型（由舊 mdx 文庫沿用，與主題無關、用 inherit/transparent 自適應） =====
+ * right-table-wrap：佛典段落的「序號（左大字）＋說明（右對齊）」無框表格。
+ * 約定的 HTML：<div class="right-table-wrap"><table>…<td class="serial">001</td>
+ *                <td class="desc">…</td>…</table></div>
+ */
+.markdown-body .right-table-wrap {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.25em 0 !important;
+  line-height: 1 !important;
+}
+
+.markdown-body .right-table-wrap table {
+  display: inline-table !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  table-layout: fixed;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* GitHub markdown 常把框線加在 tr/td/th，一併清掉 */
+.markdown-body .right-table-wrap table tr,
+.markdown-body .right-table-wrap table th,
+.markdown-body .right-table-wrap table td {
+  border: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.markdown-body .right-table-wrap table th,
+.markdown-body .right-table-wrap table td {
+  padding: 0 !important;
+  line-height: 1.05 !important;
+}
+
+.markdown-body .right-table-wrap .serial {
+  width: 25%;
+  vertical-align: middle;
+  text-align: left;
+  font-size: 2.5em;
+  line-height: 1 !important;
+  padding-left: 0.5em !important;
+}
+
+.markdown-body .right-table-wrap .desc {
+  width: 75%;
+  text-align: right;
+  line-height: 1.15;
+}
+
 /* ===== 行內標記（由 markdown-library 移植）=====
  * .siddham：悉曇／梵字放大；.note：靠右小註（固定寬度、行距收緊、四周留白） */
 .markdown-body .siddham {
