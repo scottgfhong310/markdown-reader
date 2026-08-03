@@ -639,8 +639,13 @@
 
   /* ---------- 貼上 Markdown 文字存檔 ---------- */
   // 第一個標題＝檔名（lib 的 deriveFilename，輸入時即時預覽）；無標題擋下存檔。
-  // 存檔走既有上傳管線（文字包成 File → uploadFile），同名以 resolveCollision 加時間戳避開，
-  // 完成後 refreshFiles 直接開啟新檔。
+  // 存檔走既有上傳管線（文字包成 File → uploadFile），完成後 refreshFiles 直接開啟新檔。
+  //
+  // ⚠️ **不要在這裡先 listFiles 再挑不撞名的檔名**（2026-08-03 移除）：那是 TOCTOU——
+  //    「查清單」與「上傳」之間別的分頁可以建出同名檔，於是精心挑好的名字照樣覆寫。
+  //    撞名現在由**後端**處理（`routes/upload.js` 以 `fs.open(…,'wx')` 原子建立、
+  //    同名一律改名），回應的 `files[0].filename` 就是實際落地的名字——**以它為準**，
+  //    不要用送出前那個。家族 §3.3 有這條契約。
 
   var pasteSaving = false;   // 防連點重複送出
 
@@ -676,17 +681,16 @@
     }
     pasteSaving = true;
     updatePastePreview();
-    var finalName = name;   // 撞名解決後更新；catch 的 toast 也用它（報實際嘗試的檔名）
-    L.listFiles().then(function (files) {
-      finalName = L.resolveCollision(name, files.map(function (f) { return f.name; }));
-      var file = new File([text], finalName, { type: 'text/markdown' });
-      return L.uploadFile(file).then(function () {
-        M.toast({ html: I18n.t('toast.pasteSaved', { n: finalName }), classes: 'green' });
-        var inst = M.Modal.getInstance(document.getElementById('paste-modal'));
-        if (inst) inst.close();
-        if (ta) ta.value = '';
-        return refreshFiles(finalName);
-      });
+    var finalName = name;   // 後端回報實際落地名後更新；catch 的 toast 也用它（報實際嘗試的檔名）
+    var file = new File([text], name, { type: 'text/markdown' });
+    L.uploadFile(file).then(function (resp) {
+      var info = resp && resp.files && resp.files[0];
+      finalName = (info && info.filename) || name;   // ← 後端撞名改過名就用它回報的
+      M.toast({ html: I18n.t('toast.pasteSaved', { n: finalName }), classes: 'green' });
+      var inst = M.Modal.getInstance(document.getElementById('paste-modal'));
+      if (inst) inst.close();
+      if (ta) ta.value = '';
+      return refreshFiles(finalName);
     }).catch(function (err) {
       M.toast({ html: I18n.t('toast.uploadFail', { n: finalName, m: err.message }), classes: 'red' });
     }).then(function () {

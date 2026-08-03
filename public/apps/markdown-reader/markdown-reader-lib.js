@@ -17,8 +17,12 @@
  *   MarkdownReaderLib.fetchConfig()           → Promise<{print:{keepTableTogether,keepListTogether}}>  讀 config.json（缺檔回預設）
  *   MarkdownReaderLib.isReadable(name)        → boolean   是否為支援的 markdown / 文字副檔名
  *   MarkdownReaderLib.deriveFilename(text)    → 'name.md' | null   以第一個標題推導檔名（無標題回 null）
- *   MarkdownReaderLib.resolveCollision(name, existingNames) → string   同名時檔名尾附時間戳避開
  *   MarkdownReaderLib.uploadFile(file)        → Promise<resp>   上傳單一檔案
+ *
+ *   ⚠️ 撞名處理**不在這裡**：2026-08-03 移除了 `resolveCollision(name, existingNames)`，
+ *      因為「先查清單再挑名字」本質是 TOCTOU（查與寫之間別的分頁可以建出同名檔）。
+ *      現由後端 `routes/upload.js` 以 `fs.open(…,'wx')` 原子建立、同名一律改名；
+ *      **`uploadFile` 回應的 `files[0].filename` 才是實際落地的名字**。
  *   MarkdownReaderLib.listFiles()             → Promise<Array<{name,size,mtime}>>
  *   MarkdownReaderLib.clearFolder()           → Promise<{ok,removed}>
  *   MarkdownReaderLib.fetchText(name)         → Promise<string>  讀取檔案內容
@@ -154,25 +158,6 @@
       if (h == null) return null;
       var name = sanitizeName(stripInlineMd(h));
       return name ? name + '.md' : null;
-    },
-
-    /**
-     * 檔名與既有清單同名（不分大小寫，macOS 檔案系統預設不分）時，
-     * 尾附 -yyyyMMddHHmmss 避開，永不覆寫既有檔案。
-     */
-    resolveCollision: function (name, existingNames) {
-      var taken = {};
-      (existingNames || []).forEach(function (n) { taken[String(n).toLowerCase()] = true; });
-      if (!taken[String(name).toLowerCase()]) return name;
-      var i = name.lastIndexOf('.');
-      var base = i > 0 ? name.slice(0, i) : name;
-      var ext = i > 0 ? name.slice(i) : '';
-      // 時間戳只有秒級精度：fallback 名也要查表，仍撞（同秒二存、或清單裡本來就有該名）就補序號
-      var cand = base + '-' + MarkdownReaderLib.timestamp() + ext;
-      for (var seq = 2; taken[cand.toLowerCase()]; seq++) {
-        cand = base + '-' + MarkdownReaderLib.timestamp() + '-' + seq + ext;
-      }
-      return cand;
     },
 
     /**
