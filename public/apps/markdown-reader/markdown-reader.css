@@ -389,3 +389,48 @@ body.is-empty .viewer-card {
 }
 #paste-modal .modal-footer .btn-flat { color: var(--accent); }
 #paste-modal .modal-footer .btn-flat.disabled { color: var(--muted); }
+
+/* ---------- 捲軸軌道對齊頁面底色（DESIGN_GUIDELINES §5.1）---------- */
+/* 上面的 `color-scheme: dark` 會讓瀏覽器以 **UA 預設灰** 畫捲軸軌道，那是畫面上
+   實實在在的第二種深色——視窗右緣一條，每個內層捲動容器再各一條，與 var(--bg) 差一階。
+   載入共用 materialize-dark.css 的 app 由該檔的 §2 Base 統一處理；
+   本 app 未載入它（§5.1「既有 app 維持各自手刻覆寫」），故就地補一份同樣的規則。
+   `scrollbar-color` 是可繼承屬性，設在 :root 即涵蓋所有捲動容器；
+   `::-webkit-scrollbar` 是舊版 WebKit（Safari < 18.2）的後備。
+   ⚠️ `color-scheme` 不可因此拿掉——原生表單控件、以及 @media print 那條
+      「dark 主題列印回淺色」都靠它。
+   ⚠️ 想藏捲軸的既有寫法不受影響（`scrollbar-width: none` 與
+      `::-webkit-scrollbar { display: none }` 的特異度都高於這裡）。 */
+:root {
+  --scroll-thumb: #2f3646;
+  --scroll-thumb-hover: #3d4658;
+}
+
+[data-theme="light"] {
+  --scroll-thumb: #c4ccd6;
+  --scroll-thumb-hover: #aab3bf;
+}
+
+:root {
+  scrollbar-color: var(--scroll-thumb) var(--bg);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 3px solid var(--bg);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+}
