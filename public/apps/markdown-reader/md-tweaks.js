@@ -12,15 +12,32 @@
 
   // 把程式碼（``` / ~~~ fenced 與 `…` inline）暫存成 NUL 佔位，套用 transform 後還原，
   // 讓微調不會動到程式碼內容。NUL 邊界不含 ~ / *、也不會撞到內文。
+  //
+  // ⚠ 還原必須**重複做到不再變動**，不可只做一趟。三趟遮罩是依序做的，而第三趟的
+  // inline 正則 /`[^`\n]*`/ 會吃到「已含佔位符」的文字：內文寫「用單一反引號包住三個
+  // 反引號」時（` ```math `），``` 先在第一趟被換成 NUL#NUL，外層那對單反引號隨後把它
+  // 連同佔位符整段收進 stash——於是 stash 裡出現內含佔位符的片段。String.replace
+  // **不會再掃描替換後的內容**，只做一趟就會讓內層佔位符（實體 NUL）殘留到輸出。
+  // 那個 NUL 不寫進磁碟、不觸發家族「原始碼不得含 NUL」那條稽核，但它會進 DOM。
+  //
+  // 內層索引必定小於外層（stash 只增不減，內層是更早那趟推進去的），故巢狀深度不超過
+  // 遮罩趟數；MAX_RESTORE 是病態輸入（原文自己就含 NUL 數字 NUL）的保險，不是正常路徑。
+  // 認不得的索引原樣留著（不是換成字面的 "undefined"），迴圈以「字串不再變動」收斂。
   function withCodeMasked(md, transform) {
-    var stash = [], NUL = String.fromCharCode(0);
+    var stash = [], NUL = String.fromCharCode(0), MAX_RESTORE = 8;
     function keep(m) { stash.push(m); return NUL + (stash.length - 1) + NUL; }
     var out = String(md == null ? '' : md)
       .replace(/```[\s\S]*?```/g, keep)   // ``` fenced code
       .replace(/~~~[\s\S]*?~~~/g, keep)   // ~~~ fenced code
       .replace(/`[^`\n]*`/g, keep);       // inline code
     out = transform(out);
-    return out.replace(new RegExp(NUL + '(\\d+)' + NUL, 'g'), function (m, i) { return stash[+i]; });
+    var ph = new RegExp(NUL + '(\\d+)' + NUL, 'g');
+    for (var pass = 0; pass < MAX_RESTORE; pass++) {
+      var prev = out;
+      out = out.replace(ph, function (m, i) { return i in stash ? stash[i] : m; });
+      if (out === prev) break;
+    }
+    return out;
   }
 
   /* 微調 1：**Tags** 後的 hashtag 清單 → 收成單行、每個 tag 以反引號包成行內碼。
@@ -266,5 +283,8 @@
     return text;
   }
 
-  window.MdTweaks = { apply: apply, tweaks: TWEAKS };
+  // withCodeMasked 一併導出：它的不變量（identity transform 必須逐位元組還原原檔）
+  // 是 scripts/test-md-tweaks.js 的驗收條件，而該不變量正是巢狀佔位符那個 bug 破掉的東西。
+  // 不導出就只能透過 apply() 間接觀察，而 apply() 本來就會改動文字、驗不了「逐位元組還原」。
+  window.MdTweaks = { apply: apply, tweaks: TWEAKS, withCodeMasked: withCodeMasked };
 })(window);
