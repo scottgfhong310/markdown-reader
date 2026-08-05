@@ -11,6 +11,7 @@ I18n.register('ja', {
   'tool.menu': 'ファイル一覧',
   'tool.mode': 'ライト / ダーク切替',
   'tool.lang': '言語',
+  'tool.more': 'その他のツール',
   'tool.clearFilter': 'クリア',
   'tool.style': '表示スタイル：GitHub / 新聞紙',
   'tool.formatOn': '文体整形：オン（クリックで原文表示）',

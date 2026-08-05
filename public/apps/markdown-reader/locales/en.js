@@ -11,6 +11,7 @@ I18n.register('en', {
   'tool.menu': 'File list',
   'tool.mode': 'Toggle light / dark',
   'tool.lang': 'Language',
+  'tool.more': 'More tools',
   'tool.clearFilter': 'Clear',
   'tool.style': 'Reading style: GitHub / Newsprint',
   'tool.formatOn': 'Text formatting: on (click to show raw)',
