@@ -14,6 +14,7 @@
 
 ```
 app.js                              # Express 入口：port 3000；/ → 302 /apps/markdown-reader/
+scripts/sync-copies.sh              # ①前端＋②route → InProgress 鏡像／③upload.js 與④public/upload/ 護欄（不同步）／⑤驗 8 個借來的共用件
 routes/upload.js                    # POST /api/upload?folder=markdown-reader（家族共用最小版：權威版＝ nodeapp-webapp-family/routes-upload.js，byte-identical；含檔名消毒 sanitizeUploadName，§3.4）
 routes/markdown-reader.js           # GET /files、POST /clear
 public/apps/markdown-reader/        # 前端（服務於 /apps/markdown-reader/）
@@ -55,7 +56,25 @@ icons/                              # App icon：M＋箭頭雙層 mask 徽章、
 
 ```bash
 npm install && node app.js          # → http://localhost:3000/apps/markdown-reader/
+bash scripts/sync-copies.sh         # 回灌 InProgress ＋ 驗 8 個借來的共用件（不一致回非 0）
 ```
+
+**別手動 `cp -R` 整包**——本 app 的鏡像有兩個不能碰的東西，腳本已內建護欄：
+
+- **`routes/upload.js` 絕不推過去**。本 repo 這份是家族**共用最小版**（164 行，只服務本 app）、
+  與家族權威版 `nodeapp-webapp-family/routes-upload.js` byte-identical；InProgress 那份是
+  **多 app 共用版**（297 行，服務整個孵化器）。推過去等於讓其他 app 的上傳一起壞
+  （家族 canon「回灌時不要蓋掉 InProgress 的 `app.js` / `upload.js`」）。**③ 因此驗兩件事**：
+  本 repo 這份仍等於家族權威版，且 InProgress 那份**仍與它不同**——
+  相同才要擔心（**警告不算失敗**，全新環境本來就可能相同，當成錯誤會誤報）。
+- **`public/upload/markdown-reader/` 從不觸碰**：使用者上傳的內容（不進版控），
+  獨立版少量 sample、鏡像是實際在用的檔案。
+
+> `rsync` 不刪檔，所以 ① 的 `diff -rq` 不是廢話：它抓的是**鏡像裡的殘留檔**
+> （獨立版已刪、鏡像還留著）。上述護欄與共用件漂移都以反向驗證確認會如實出聲。
+>
+> ⚠ `md-tweaks.js` 在 ⑤ 是**只驗不抓**——它的權威版是 `markdown-library`，
+> 由**該 repo** 的 `sync-copies.sh` ⑤ 推過來。要改就去那邊改完再跑它的腳本，**別在這裡就地改**。
 
 ## 本 app 的 canon 重點
 
