@@ -186,6 +186,65 @@
     });
   }
 
+  /* 微調 5：<span class="note"> 依字數自動補 max-width，讓小註自然折成兩行左右。
+   *   <span class="note">梵云踰繕那，此十六里，云由旬、由延，皆訛略也。</span>
+   *   → <span class="note" style="max-width: 12em">…</span>（23 字 → 23/2 = 11.5 → 進位 12）
+   * 值＝ceil(內容字數 / 2)，單位 em——em 跟著 .note 自身字級走，列印放大與 config 換字型都不走樣
+   *（viewer.css 那條註解寫明「一律用 em 不用 px」）。這等於把作者原本「在內容長度約 1/2 處
+   * 手插 <br/>」那個慣例自動化：CJK 一字約一 em 寬，上限取一半即折成兩行，再由 text-wrap:
+   * balance 把兩行勻分。
+   * 字數不計內層標籤（<br/> 等）——手插的 <br/> 是斷行指示不是內容，計進去會把上限撐寬。
+   *
+   * 作者已手插 <br/> 時，上限取 max(字數/2, 最長半行)：<br/> 切出的半行本來就是作者要的
+   * 一行，若上限比它窄，那一行會再被折斷——2 行變 4 行，比不加上限還糟。實測語料 147 條
+   * 手插 <br/> 的小註中，23 條的最長半行超過 字數/2（作者切得不對半）。
+   * ⚠ 「最長半行」只在真的有 <br/> 時參與比較：沒有 <br/> 就只有一段＝全文，
+   * max(n/2, n) 會等於 n＝形同沒有上限，整個微調對那 203 條會失效。
+   * 已自帶 style=（作者手設 --note-max 或 max-width）者不動：作者的明示優先，這也讓本微調冪等。
+   * class 以空白切開後逐項比對，不用 /note/ 子字串（避免吃到 footnote／note-x）。跳過程式碼。
+   *
+   * ⚠ 收尾的 </span> 要**數深度**找，不能用非貪婪比到第一個 </span>：實測語料 430 條小註中
+   * 有 16 條內含巢狀 <span>（.glyph 缺字、.nowrap 不斷行群組），非貪婪只會數到內層那個
+   * 收尾為止，字數偏低、上限被壓窄。這種錯不會報錯，只會讓那 16 條多折一行。
+   * 只在開頭標籤插入 style、其餘原文一字不動（不重組內容，避免動到巢狀結構）。
+   *
+   * 長註自帶保險：上限與字數等比，6000 字的註得到 3000em＝形同無上限，
+   * 仍在段落寬度處自然折行——viewer.css 註解警告的「固定上限把長註壓成又窄又高的一柱」
+   * 在這裡不成立，因為這個上限根本不固定。 */
+  function noteMaxWidth(md) {
+    // 自 from 起數 <span>/</span> 深度，回傳與外層配對的那個 </span> 的位置（找不到回 -1）
+    function matchingClose(s, from) {
+      var tok = /<span\b[^>]*>|<\/span\s*>/gi, depth = 1, t;
+      tok.lastIndex = from;
+      while ((t = tok.exec(s))) {
+        if (t[0].charAt(1) === '/') { if (--depth === 0) return t.index; }
+        else depth++;
+      }
+      return -1;
+    }
+    return withCodeMasked(md, function (s) {
+      var open = /<span([^>]*)>/g, m, out = '', last = 0;
+      while ((m = open.exec(s))) {
+        var attrs = m[1];
+        var cls = attrs.match(/\bclass\s*=\s*["']([^"']*)["']/);
+        if (!cls || cls[1].trim().split(/\s+/).indexOf('note') < 0) continue;
+        if (/\bstyle\s*=/.test(attrs)) continue;                  // 作者已明示 → 不動
+        var end = matchingClose(s, open.lastIndex);
+        if (end < 0) continue;                                    // 沒收尾 → 不動，不吞內容
+        // 依手插的 <br/> 切成半行，各自去掉標籤後數字；沒有 <br/> 就只有一段
+        var segs = s.slice(open.lastIndex, end).split(/<br\s*\/?>/i)
+          .map(function (x) { return x.replace(/<[^>]*>/g, '').length; });
+        var n = segs.reduce(function (a, b) { return a + b; }, 0);   // 不計 <br/> 等標籤
+        if (!n) continue;
+        var cap = Math.ceil(n / 2);
+        if (segs.length > 1) cap = Math.max(cap, Math.max.apply(null, segs));   // 不窄於作者切出的最長半行
+        out += s.slice(last, m.index) + '<span' + attrs + ' style="max-width: ' + cap + 'em">';
+        last = open.lastIndex;
+      }
+      return out + s.slice(last);
+    });
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
   var TWEAKS = [
@@ -194,6 +253,7 @@
     headerizeLabels,
     spaceBareTilde,
     spaceCjkBold,
+    noteMaxWidth,
     repairLatexMath
   ];
 
