@@ -75,6 +75,8 @@
 
 `@font-face` 在**主文件**宣告，shadow DOM 內容亦可使用。
 
+**列印頁尾**：`setPrintOptions()` 動態填 `<style id="print-runtime-style">` 的 `@page`——左下 `〔 檔名 〕`、右下 `頁碼 / 總頁數`。左下**只印檔名、不含目錄與副檔名**（`MarkdownReaderLib.stem`）〔owner 2026-09-03，與 `local-reader` 同批〕：檔名在側欄清單與 `document.title` 上都還在，頁尾要的是「這疊紙是哪一份」。⚠️ `stem` **只切最後一個點、且點不在開頭才切**——`README.zh-Hant.md` → `README.zh-Hant`（切光會弄丟語言標記）、`.gitignore` 原樣（切了會變成空字串，而空的頁尾與「這一份沒有檔名」長得一模一樣）。⚠️ **去目錄那一半只有一份實作**（`basename`）：下載檔名（`downloadCurrent`）與本頁尾共用它，各寫一份的話一開始一模一樣、然後其中一邊漏掉某個邊界。
+
 ### 5.2 主題 light / dark
 `<html data-theme>` ＋ CSS 變數（markdown-reader.css 定義 light/dark 兩組）；viewer host `data-mode` 讓 newsprint 皮膚跟著切；內容主題切 `md-md-css` / `md-hl-css` 的 href。記憶於 `localStorage('markdown-reader-theme')`，`<head>` 內有防閃爍 inline script。列印時 `beforeprint` 強制 light、`afterprint` 還原。
 

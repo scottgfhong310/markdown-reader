@@ -27,6 +27,8 @@
  *   MarkdownReaderLib.clearFolder()           → Promise<{ok,removed}>
  *   MarkdownReaderLib.fetchText(name)         → Promise<string>  讀取檔案內容
  *   MarkdownReaderLib.fileUrl(name)           → string   靜態檔案 URL
+ *   MarkdownReaderLib.basename(name)          → string   去掉目錄（GitHub 檔的 name 可能含路徑）
+ *   MarkdownReaderLib.stem(name)              → string   再去掉副檔名（列印頁尾用）
  *   MarkdownReaderLib.timestamp(date)         → 'yyyyMMddHHmmss'
  *   MarkdownReaderLib.downloadText(name,text) → 觸發瀏覽器下載
  *   MarkdownReaderLib.formatSize(bytes)       → 'xx KB'
@@ -129,6 +131,22 @@
     return STATIC_BASE + encodeURIComponent(name);
   }
 
+  // 去掉目錄。GitHub 匯入的檔名可能含路徑（'docs/a/b.md'），本地上傳的則不含。
+  function basename(p) {
+    var s = String(p == null ? '' : p);
+    var i = s.lastIndexOf('/');
+    return i < 0 ? s : s.slice(i + 1);
+  }
+
+  // 檔名去掉副檔名（列印頁尾用）：'docs/a/b.md' → 'b'、'README.zh-Hant.md' → 'README.zh-Hant'。
+  // ⚠️ 只有「點不在開頭」才切——'.gitignore' 的點在 index 0，切了會變成空字串，
+  //    而空的頁尾與「這一份沒有檔名」長得一模一樣。沒有副檔名時原樣回傳。
+  function stem(p) {
+    var b = basename(p);
+    var i = b.lastIndexOf('.');
+    return i > 0 ? b.slice(0, i) : b;
+  }
+
   var MarkdownReaderLib = {
 
     FOLDER: FOLDER,
@@ -207,6 +225,9 @@
     },
 
     fileUrl: fileUrl,
+
+    basename: basename,
+    stem: stem,
 
     /** 本地時間 yyyyMMddHHmmss */
     timestamp: function (date) {

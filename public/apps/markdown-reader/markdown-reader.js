@@ -333,7 +333,9 @@
 
   function setPrintOptions() {
     var styleEl = document.getElementById('print-runtime-style');
-    var name = (state.current || 'markdown').replace(/"/g, '\\"');
+    // 頁尾只印「檔名去掉目錄與副檔名」（L.stem）〔owner 2026-09-03〕。
+    // 逸出雙引號仍要做——這串字會落進 CSS 的 content: "…"，檔名裡帶引號會把它提前結束。
+    var name = (state.current ? L.stem(state.current) : 'markdown').replace(/"/g, '\\"');
     styleEl.textContent =
       '@media print {' +
       '  @page {' +
@@ -714,7 +716,7 @@
       return;
     }
     var text = state.text != null ? state.text : '';
-    var name = String(state.current).split('/').pop();   // GitHub 檔可能含路徑，下載取檔名
+    var name = L.basename(state.current);   // GitHub 檔可能含路徑，下載取檔名（副檔名要留著）
     L.downloadText(name, text);
     M.toast({ html: I18n.t('toast.downloaded', { n: name }), classes: 'teal' });
   }
