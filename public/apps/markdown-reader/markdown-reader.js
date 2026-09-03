@@ -110,7 +110,7 @@
     newsprintFontsInjected = true;
     var l = document.createElement('link');
     l.rel = 'stylesheet';
-    l.href = './newsprint-fonts.css';
+    l.href = './newsprint-fonts.css?v=1';   // cache-bust：改此檔時比照 index.html 一起 bump ?v（見 index.html 註）
     document.head.appendChild(l);
   }
 
@@ -120,7 +120,7 @@
   // media="not all" ＋ 有 href → load 照樣觸發）。見「render 韌性」條與家族 §4.3。
   function applySkinToLink(link, style) {
     if (!link) return;
-    link.setAttribute('href', './viewer-newsprint.css');
+    link.setAttribute('href', './viewer-newsprint.css?v=1');
     link.setAttribute('media', style === 'newsprint' ? 'all' : 'not all');
   }
 

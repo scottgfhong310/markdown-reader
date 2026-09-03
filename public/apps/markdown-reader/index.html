@@ -31,19 +31,23 @@
   <!-- zero-md v3：匯入並自動註冊 <zero-md> -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/zero-md@3?register"></script>
 
+  <!-- Cache-busting：所有本地（./）CSS/JS 都帶共用版本查詢字串 ?v=N。改任何本地前端檔後把 N +1
+       （全域 find-replace `?v=<N>`，**含 markdown-reader.js 內兩處 JS 設定的 href**），正常 reload
+       即抓到新版、免 hard refresh；亦繞過 InProgress app.js 對 static 設的 7 天 maxAge。
+       CDN 資源本身已帶版本、不必；icons/ 與 manifest.json 刻意不帶（比照 local-reader）。 -->
   <!-- KaTeX 字型（@font-face 抽出版）必須由**主文件**宣告：zero-md 把 template 的樣式複製進
        shadow root，而 shadow tree 內的 @font-face 不會註冊——只放 template 那份，公式會靜靜地
        掉到 .katex 後備堆疊的 Times New Roman（實測同段公式 48.70px vs 45.99px）。版面規則仍留在
        template 內的 katex.min.css（主文件 CSS 穿不進 shadow）。自託管版本見 ./katex/README.md。 -->
-  <link rel="stylesheet" href="./katex/katex-fonts.css" />
-  <link rel="stylesheet" href="./markdown-reader.css" />
-  <link rel="stylesheet" href="./thinking-dot.css" />   <!-- 共用 utility：Claude 風「思考中」脈動點 .thinking-dot -->
+  <link rel="stylesheet" href="./katex/katex-fonts.css?v=1" />
+  <link rel="stylesheet" href="./markdown-reader.css?v=1" />
+  <link rel="stylesheet" href="./thinking-dot.css?v=1" />   <!-- 共用 utility：Claude 風「思考中」脈動點 .thinking-dot -->
 
   <!-- 動態列印設定（@page 方向 / 頁尾） -->
   <style id="print-runtime-style"></style>
 
-  <link rel="stylesheet" href="./side-tool.css" />
-  <link rel="stylesheet" href="./filter-clear.css" />   <!-- 共用 utility：篩選框「清除」× 鈕（家族 §5.12） -->
+  <link rel="stylesheet" href="./side-tool.css?v=1" />
+  <link rel="stylesheet" href="./filter-clear.css?v=1" />   <!-- 共用 utility：篩選框「清除」× 鈕（家族 §5.12） -->
 </head>
 
 <body class="is-empty">
@@ -105,9 +109,9 @@
                  樣式與字型為自託管（./katex/，vendored KaTeX 0.18.1 的 katex.min.css ＋ 20 個 woff2，
                  見該資料夾 README）——不再向 CDN 要字型；但 KaTeX 引擎本身仍由 zero-md 自 CDN 載入，
                  故這不等於離線可用。詳見家族 §4.3。 -->
-            <link rel="stylesheet" href="./katex/katex.min.css" />
+            <link rel="stylesheet" href="./katex/katex.min.css?v=1" />
             <!-- 自訂樣式：抽到外部 viewer.css，作用於 shadow DOM 內 -->
-            <link rel="stylesheet" href="./viewer.css" />
+            <link rel="stylesheet" href="./viewer.css?v=1" />
             <!-- 閱讀風皮膚層：github 風時 media="not all" 停用、newsprint 風時啟用 viewer-newsprint.css -->
             <link rel="stylesheet" id="md-skin-css" media="not all" />
             <!-- 內文字型覆寫（config.json 的 viewFont / printFont / codeFont）：由 JS 依設定填入；空＝不覆寫。
@@ -229,19 +233,19 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-  <script src="./markdown-reader-lib.js"></script>
-  <script src="./md-tweaks.js"></script>
+  <script src="./markdown-reader-lib.js?v=1"></script>
+  <script src="./md-tweaks.js?v=1"></script>
 
   <!-- i18n 引擎 + 語言字典（先引擎再各語系；新增語言＝多一個 locale 檔） -->
-  <script src="./i18n.js"></script>
-  <script src="./locales/zh-Hant.js"></script>
-  <script src="./locales/en.js"></script>
-  <script src="./locales/ja.js"></script>
+  <script src="./i18n.js?v=1"></script>
+  <script src="./locales/zh-Hant.js?v=1"></script>
+  <script src="./locales/en.js?v=1"></script>
+  <script src="./locales/ja.js?v=1"></script>
 
-  <script src="./filter-clear.js"></script>   <!-- 共用 utility：篩選框清除鈕 -->
-  <script src="./side-tool.js"></script>   <!-- 共用 utility：側鍵行為（check 微回饋＋溢出收納） -->
-  <script src="./mermaid-elk.js"></script>   <!-- 共用 utility：zero-md 的 mermaid 改用 ELK 排版（須在控制器之前載入） -->
-  <script src="./markdown-reader.js"></script>
+  <script src="./filter-clear.js?v=1"></script>   <!-- 共用 utility：篩選框清除鈕 -->
+  <script src="./side-tool.js?v=1"></script>   <!-- 共用 utility：側鍵行為（check 微回饋＋溢出收納） -->
+  <script src="./mermaid-elk.js?v=1"></script>   <!-- 共用 utility：zero-md 的 mermaid 改用 ELK 排版（須在控制器之前載入） -->
+  <script src="./markdown-reader.js?v=1"></script>
 </body>
 
 </html>
