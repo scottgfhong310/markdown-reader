@@ -141,13 +141,26 @@
 }
 
 /* 缺字 SVG（/lib/Typeface/svgs/）：以 mask + currentColor 當「文字色」呈現，
- * 1em 見方、隨內文顏色（light / dark / 列印皆正確；黑底 <img> 在 dark 會看不見）。
- * 用法：<span class="glyph" style="--g:url('/lib/Typeface/svgs/T022132.svg')" role="img" aria-label="缺字 T022132"></span> */
+ * 隨內文顏色（light / dark / 列印皆正確；黑底 <img> 在 dark 會看不見）。
+ * 用法：<span class="glyph" style="--g:url('/lib/Typeface/svgs/T022132.svg')" role="img" aria-label="缺字 T022132"></span>
+ *
+ * 尺寸 1.12em〔2026-09-11 起，原為 1em；owner 指示「再大約 2px」〕——⚠️ 這不是隨手放大，
+ * 1em 見方時缺字**看起來比鄰近漢字小**，而那是 SVG 自己的留白造成的。實測（3001／
+ * T0848 卷一四個缺字，canvas 量墨界）：缺字墨高只占 0.801–0.861em，同一字型堆疊的
+ * 漢字（那/多/摩/尼/心/國）是 0.873–0.923em ⇒ 缺字約為漢字的 0.93 倍。1.12em 之後
+ * 墨高 ≈0.93em、比漢字略大一點，取同 .siddham 那條「比漢字略大、可辨即可」的作風。
+ *
+ * ⚠️ vertical-align 必須跟著由 -0.12em 改成 -0.18em，否則盒子只會往上長。
+ * 原本的 (1em, -0.12em) 恰好重現 CJK 的表意文字 em 框（基線上方 0.88em、下方 0.12em），
+ * 盒心落在基線上方 0.38em；而實測缺字**墨心本來就是對的**（0.323–0.366 vs 漢字
+ * 0.336–0.373）⇒ 放大要繞著盒心等比長：1.12em 的盒子要落在 [-0.18em, +0.94em]，
+ * 盒心才仍是 0.38em。這三個值全部以「父層的 em」計（.glyph 自己不設 font-size），
+ * 一律用 em 不用 px —— 列印段把內文降成 12pt，px 不會跟著縮。 */
 .markdown-body .glyph {
   display: inline-block;
-  width: 1em;
-  height: 1em;
-  vertical-align: -0.12em;
+  width: 1.12em;
+  height: 1.12em;
+  vertical-align: -0.18em;
   background-color: currentColor;
   -webkit-mask: var(--g) center / contain no-repeat;
   mask: var(--g) center / contain no-repeat;
