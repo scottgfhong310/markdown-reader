@@ -239,6 +239,22 @@
       }
       return -1;
     }
+    /* 禁則（kinsoku）修正〔2026-09-13〕：上限剛好切在「不可置於行首」的標點前面時，
+     * 瀏覽器會把前一個字一起帶到下一行，於是兩行變三行。實例（T1185B）：
+     *   「而也切，下同」6 字 → 3em → 應為 而也切／，下同，但「，」不可起行
+     *   → 實際 而也／切，下／同（1280px 實測 3 行；上限 +1em 即回到 2 行）。
+     * 「輕呼，下同」5 字 → 3em 不受影響：逗號落在第一行尾。
+     * 同理，「不可置於行尾」的開括號落在第一行最後一格時會被推到下一行。
+     * 解法：把切點往後推過行首禁則字、往前退過行尾禁則字，上限取兩行較長的那一行。
+     * 只用於沒有手插 <br/> 的小註——有 <br/> 時每個半行都不寬於上限，不會再折行。 */
+    var NO_START = /[、。，．：；？！）」』】〕〉》〗〙〛｝ー…‥・％,.:;?!)\]}]/;
+    var NO_END = /[（「『【〔〈《〖〘〚｛(\[{]/;
+    function kinsokuCap(text, cap) {
+      var n = text.length, k = cap;
+      while (k < n && NO_START.test(text.charAt(k))) k++;
+      while (k > 0 && k < n && NO_END.test(text.charAt(k - 1))) k--;
+      return Math.max(k, n - k, 1);
+    }
     return withCodeMasked(md, function (s) {
       var open = /<span([^>]*)>/g, m, out = '', last = 0;
       while ((m = open.exec(s))) {
@@ -255,6 +271,7 @@
         if (!n) continue;
         var cap = Math.ceil(n / 2);
         if (segs.length > 1) cap = Math.max(cap, Math.max.apply(null, segs));   // 不窄於作者切出的最長半行
+        else cap = kinsokuCap(s.slice(open.lastIndex, end).replace(/<[^>]*>/g, ''), cap);
         out += s.slice(last, m.index) + '<span' + attrs + ' style="max-width: ' + cap + 'em">';
         last = open.lastIndex;
       }
