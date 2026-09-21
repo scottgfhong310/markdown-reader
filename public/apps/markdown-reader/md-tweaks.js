@@ -347,6 +347,51 @@
     });
   }
 
+  /* 微調 9：「標點凡例」引言區塊＋其後的分隔線，包進 <div class="no-print">〔owner 2026-09-21〕
+   *   > **標點凡例**               <div class="no-print">
+   *   > ……                  →
+   *                                > **標點凡例**
+   *   ---                          > ……
+   *
+   *                                ---
+   *
+   *                                </div>
+   * 凡例是給讀者的整理說明、不是經文本身，列印時不要（viewer.css 的 .no-print 在 @media print 隱藏）。
+   * 語料 33 份裡 29 份已由作者手包，本微調把那個慣例自動化：
+   *   · 觸發：一個以「標點凡例」開頭的引言區塊（`>` 後可帶 #／** 標記），且在空行之後緊接 `---`；
+   *     沒有分隔線就不動——結構與 owner 指定的不同，不猜它的範圍。
+   *   · 已包好的（前一個非空行就是 <div class="no-print">）不動 ⇒ 冪等，手包的 29 份輸出與原文逐位元組相同。
+   *   · 引言區塊＝連續的 `>` 行（空行即結束）；原文行一字不動，只在前後加行。跳過程式碼。 */
+  function noPrintLegend(md) {
+    var HEAD = /^ {0,3}>\s*(?:#{1,6}\s*)?(?:\*\*)?標點凡例/;
+    var HR = /^ {0,3}-{3,}\s*$/;
+    var OPEN = /^\s*<div\s+class\s*=\s*["'][^"']*\bno-print\b[^"']*["']\s*>\s*$/;
+    function bare(l) { return l.replace(/\r$/, ''); }
+    return withCodeMasked(md, function (s) {
+      var lines = s.split('\n'), out = [], i = 0;
+      while (i < lines.length) {
+        if (!HEAD.test(bare(lines[i]))) { out.push(lines[i++]); continue; }
+        var j = i;
+        while (j < lines.length && /^ {0,3}>/.test(bare(lines[j]))) j++;
+        var k = j;
+        while (k < lines.length && !bare(lines[k]).trim()) k++;
+        var p = out.length - 1;
+        while (p >= 0 && !bare(out[p]).trim()) p--;
+        var wrapped = p >= 0 && OPEN.test(bare(out[p]));
+        if (k === j || k >= lines.length || !HR.test(bare(lines[k])) || wrapped) {
+          out = out.concat(lines.slice(i, j)); i = j; continue;
+        }
+        out.push('<div class="no-print">', '');
+        out = out.concat(lines.slice(i, j));
+        out.push('', lines[k], '', '</div>');
+        // HTML 區塊（CommonMark type 6）在空行才結束：</div> 後緊接文字的話，那段會被吞進 HTML 區塊、不再當 markdown 渲染
+        if (k + 1 < lines.length && bare(lines[k + 1]).trim()) out.push('');
+        i = k + 1;
+      }
+      return out.join('\n');
+    });
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
   var TWEAKS = [
@@ -357,6 +402,7 @@
     spaceCjkBold,
     noteMaxWidth,
     siddhamSyllables,
+    noPrintLegend,
     repairLatexMath
   ];
 
