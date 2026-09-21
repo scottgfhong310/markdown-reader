@@ -42,6 +42,7 @@
   var THEME_KEY = 'markdown-reader-theme';
   var FORMAT_KEY = 'markdown-reader-format';
   var STYLE_KEY = 'markdown-reader-style';   // 閱讀風格：'github' | 'newsprint'
+  var SIDDHAM_KEY = 'markdown-reader-siddham';  // 悉曇讀音：'syllable'（逐音節，預設）| 'line'（整行）
   var PRINT_SCALE_KEY = 'markdown-reader-printscale';   // 列印字級放大 toggle 狀態
   var PRINT_KEY = 'markdown-reader-print';   // 列印分頁設定（config 面板）覆寫，存整個物件
   // 語系由 I18n 引擎管理（localStorage 'lang'，預設 zh-Hant），不再自行保存。
@@ -146,6 +147,22 @@
   function toggleStyle() {
     applyStyle(state.style === 'newsprint' ? 'github' : 'newsprint');
     M.toast({ html: I18n.t(state.style === 'newsprint' ? 'toast.styleNewsprint' : 'toast.styleGithub') });
+  }
+
+  /* ---------- 悉曇讀音：逐音節 / 整行（viewer host 屬性 data-siddham；viewer.css 反應） ---------- */
+  // 拆分由 md-tweaks 的 siddhamSyllables 在渲染前做好，兩種顯示共用同一份 markup ⇒ 切換不必重新渲染。
+  function applySiddham(mode) {
+    mode = (mode === 'line') ? 'line' : 'syllable';
+    state.siddham = mode;
+    viewer.setAttribute('data-siddham', mode);
+    var btn = document.getElementById('setting-siddham');
+    if (btn) btn.classList.toggle('active', mode === 'syllable');
+    try { localStorage.setItem(SIDDHAM_KEY, mode); } catch (e) {}
+  }
+
+  function toggleSiddham() {
+    applySiddham(state.siddham === 'line' ? 'syllable' : 'line');
+    M.toast({ html: I18n.t(state.siddham === 'line' ? 'toast.siddhamLine' : 'toast.siddhamSyllable') });
   }
 
   /* ---------- 內文字型（config 驅動：viewFont / printFont / codeFont） ---------- */
@@ -814,6 +831,7 @@
     document.getElementById('setting-mode').addEventListener('click', toggleTheme);
     document.getElementById('setting-lang').addEventListener('click', cycleLang);
     document.getElementById('setting-style').addEventListener('click', toggleStyle);
+    document.getElementById('setting-siddham').addEventListener('click', toggleSiddham);
     document.getElementById('setting-format').addEventListener('click', toggleFormat);
     document.getElementById('setting-orientation').addEventListener('click', toggleOrientation);
     document.getElementById('setting-print').addEventListener('click', function () { window.print(); });
@@ -871,6 +889,9 @@
     var savedStyle = 'github';
     try { savedStyle = localStorage.getItem(STYLE_KEY) || 'github'; } catch (e) {}
     applyStyle(savedStyle === 'newsprint' ? 'newsprint' : 'github');
+    var savedSiddham = 'syllable';
+    try { savedSiddham = localStorage.getItem(SIDDHAM_KEY) || 'syllable'; } catch (e) {}
+    applySiddham(savedSiddham);
 
     // 列印分頁設定（config.json）：設好 zero-md host 屬性，
     // 供 viewer.css 的 :host([data-print-keep~="..."]) 反應（缺檔則維持「可流動」預設）。

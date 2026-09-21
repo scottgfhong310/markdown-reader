@@ -134,7 +134,7 @@ side tool `auto_fix_high` toggle。以動態 `import('/lib/adp-col/mdFormater.js
 
 ### 5.12 內容版型 class（viewer.css，與主題無關，自適應 light/dark × github/newsprint）
 - `.right-table-wrap`：序號（左大字）＋說明（右對齊）的無框表。
-- `.siddham`：悉曇字形，`::after` 以 `attr(data-latin)` 在字形後接括號讀音（灰色斜體）。
+- `.siddham`：悉曇字形，`::after` 以 `attr(data-latin)` 在字形後接括號讀音（灰色斜體）。預設**逐音節**：`md-tweaks.js` 的 `siddhamSyllables` 在渲染前把它拆成 `<span class="sy" data-latin="bu̲">𑖤𑗜</span>…`（音節＝基字＋組合記號，virama 黏下一個子音；空白與 `𑗂` 等悉曇標點不佔讀音），讀音以 `::after` 下標接在每個音節後；側鍵 `subscript`（`#setting-siddham`，存 `localStorage('markdown-reader-siddham')`）切回整行，實作是 viewer 的 host 屬性 `data-siddham="line"`，兩種顯示共用同一份 markup、切換不重新渲染。讀音一律是 `::after` ⇒ 不可選取，複製仍是純悉曇。音節數 ≠ 讀音數時**不猜對位**：標 `sy-mismatch`（`data-sy-count="音節/讀音"`），退回整行讀音並加點狀底線〔2026-09-21〕。
 - `.glyph`：缺字以 SVG（`/lib/Typeface/svgs/`）經 `mask` + `background-color: currentColor` 當「文字色」呈現，1em 見方、隨內文色（light/dark 皆正確）。列印另有去底例外（`@media print` 還原 `background-color` 否則會消失）。
 - `.note`：行內小註（小字）。
 - `.no-print` / `.screen-only`：螢幕顯示、列印隱藏。

@@ -140,6 +140,32 @@
   margin-left: 0.1em;
 }
 
+/* 逐音節讀音〔owner 2026-09-21〕：md-tweaks 的 siddhamSyllables 把 .siddham 拆成
+ * <span class="sy" data-latin="bu̲">𑖤𑗜</span>…（外層加 sy-split）。
+ * 預設逐音節；viewer 的 host 屬性 data-siddham="line" 退回上面那條整行讀音。
+ * 兩種顯示是同一份 markup，切換不必重新渲染。讀音一律 ::after ⇒ 不可選取，複製仍是純悉曇。
+ * .sy 用 inline-block：悉曇字之間沒有斷行點（UAX #14 當 AL），一整串不帶空白的真言
+ * 會變成一個不可斷的長條撐破版面；atomic inline 前後才可斷行，且音節與讀音不會被拆到兩行。 */
+:host(:not([data-siddham="line"])) .markdown-body .siddham.sy-split::after {
+  content: none;
+}
+:host(:not([data-siddham="line"])) .markdown-body .siddham .sy {
+  display: inline-block;
+  white-space: nowrap;
+}
+:host(:not([data-siddham="line"])) .markdown-body .siddham .sy::after {
+  content: "(" attr(data-latin) ")";
+  font-family: "Charis SIL", "Gentium Plus", serif;
+  font-size: 0.7rem;
+  color: #666;
+  vertical-align: sub;       /* ＝<sub>；line-height 仍由 .siddham 的 1 管，不撐高行距 */
+  margin: 0 0.15em 0 0.05em;
+}
+/* 音節數 ≠ 讀音數（sy-mismatch）：不猜對位，退回整行讀音並以點狀底線標出 */
+:host(:not([data-siddham="line"])) .markdown-body .siddham.sy-mismatch::after {
+  text-decoration: underline dotted;
+}
+
 /* 缺字 SVG（/lib/Typeface/svgs/）：以 mask + currentColor 當「文字色」呈現，
  * 隨內文顏色（light / dark / 列印皆正確；黑底 <img> 在 dark 會看不見）。
  * 用法：<span class="glyph" style="--g:url('/lib/Typeface/svgs/T022132.svg')" role="img" aria-label="缺字 T022132"></span>

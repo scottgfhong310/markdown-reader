@@ -279,6 +279,74 @@
     });
   }
 
+  /* 微調 8：<span class="siddham" data-latin="…"> 逐音節拆分〔owner 2026-09-21〕
+   *   <span class="siddham" data-latin="bu̲ ṅva">𑖤𑗜𑖒𑖿𑖪</span>
+   *   → <span class="siddham sy-split" data-latin="bu̲ ṅva"><span class="sy" data-latin="bu̲">𑖤𑗜</span><span class="sy" data-latin="ṅva">𑖒𑖿𑖪</span></span>
+   * 讀音仍由 viewer.css 的 ::after 畫（不可選取 ⇒ 複製／搜尋拿到的仍是純悉曇，與拆分前相同）；
+   * 逐音節或整行由 viewer 的 host 屬性 data-siddham 決定——**兩種顯示用的是同一份 markup**，
+   * 外層的 data-latin 原樣留著給整行模式用，所以切換不必重新渲染。
+   *
+   * 音節＝一個基字＋其後的組合記號（\p{M}／\p{Cf}）；virama（U+115BF）把下一個基字黏進
+   * 同一個音節（𑖒𑖿𑖪 是一個音節）。⚠ 不可改用 Intl.Segmenter：它的連寫規則（GB9c）
+   * 只涵蓋少數印度文字、不含悉曇，會把 𑖒𑖿｜𑖪 拆成兩段。
+   * 空白與悉曇標點（U+115C1–U+115D7，𑗂 等）原樣留著、不佔讀音——實測語料 17 個
+   * 「對不上」全是 𑗂 造成的，扣掉之後 76/76 逐一對上。
+   *
+   * ⚠ 音節數 ≠ 讀音數時**不猜對位**：加 sy-mismatch（＋data-sy-count="音節/讀音"）、
+   * 內容不拆，viewer.css 退回整行讀音並加標記。對錯位的讀音長得跟對的一模一樣。
+   * 內容含標籤（<）、沒有 data-latin、或一個悉曇字都沒有的 span 不動；已處理過的不再處理（冪等）。
+   * 字形拆進多個 inline 元素實測不影響成形（語料 77 串，寬度差 ≤ 0.07px）。跳過程式碼。 */
+  function siddhamSyllables(md) {
+    var VIRAMA = 0x115BF;
+    function isMark(ch) { return /[\p{M}\p{Cf}]/u.test(ch); }
+    function isPassThrough(cp, ch) {           // 空白、悉曇標點、悉曇區以外的字：不成音節
+      return /\s/.test(ch) || (cp >= 0x115C1 && cp <= 0x115D7) || cp < 0x11580 || cp > 0x115FF;
+    }
+    function attr(attrs, name) {
+      var m = attrs.match(new RegExp('\\s' + name + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')'));
+      return m ? (m[1] != null ? m[1] : m[2]) : null;
+    }
+    // 內容 → [{ syl:true, text } | { syl:false, text }]
+    function segment(text) {
+      var out = [], cur = null;
+      Array.from(text).forEach(function (ch) {
+        var cp = ch.codePointAt(0);
+        if (isMark(ch) && cur && cur.syl) { cur.text += ch; cur.last = cp; return; }
+        if (!isPassThrough(cp, ch)) {
+          if (cur && cur.syl && cur.last === VIRAMA) { cur.text += ch; cur.last = cp; return; }
+          cur = { syl: true, text: ch, last: cp }; out.push(cur); return;
+        }
+        cur = { syl: false, text: ch }; out.push(cur);
+      });
+      return out;
+    }
+    return withCodeMasked(md, function (s) {
+      return s.replace(/<span(\s[^>]*)>([^<]*)<\/span\s*>/g, function (whole, attrs, body) {
+        var cls = attr(attrs, 'class');
+        if (cls == null) return whole;
+        var list = cls.trim().split(/\s+/);
+        if (list.indexOf('siddham') < 0 || list.indexOf('sy-split') >= 0 || list.indexOf('sy-mismatch') >= 0) return whole;
+        var latin = attr(attrs, 'data-latin');
+        if (latin == null || !latin.trim()) return whole;
+        var parts = segment(body);
+        var syls = parts.filter(function (p) { return p.syl; });
+        if (!syls.length) return whole;
+        var toks = latin.trim().split(/\s+/);
+        var head = attrs.replace(/(\sclass\s*=\s*)(["'])([^"']*)\2/, function (m, pre, q, v) {
+          return pre + q + v + (syls.length === toks.length ? ' sy-split' : ' sy-mismatch') + q;
+        });
+        if (syls.length !== toks.length) {
+          return '<span' + head + ' data-sy-count="' + syls.length + '/' + toks.length + '">' + body + '</span>';
+        }
+        var k = 0;
+        return '<span' + head + '>' + parts.map(function (p) {
+          if (!p.syl) return p.text;
+          return '<span class="sy" data-latin="' + toks[k++].replace(/"/g, '&quot;') + '">' + p.text + '</span>';
+        }).join('') + '</span>';
+      });
+    });
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
   var TWEAKS = [
@@ -288,6 +356,7 @@
     spaceBareTilde,
     spaceCjkBold,
     noteMaxWidth,
+    siddhamSyllables,
     repairLatexMath
   ];
 
