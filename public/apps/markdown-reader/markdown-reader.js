@@ -121,7 +121,7 @@
   // media="not all" ＋ 有 href → load 照樣觸發）。見「render 韌性」條與家族 §4.3。
   function applySkinToLink(link, style) {
     if (!link) return;
-    link.setAttribute('href', './viewer-newsprint.css?v=2');
+    link.setAttribute('href', './viewer-newsprint.css?v=3');
     link.setAttribute('media', style === 'newsprint' ? 'all' : 'not all');
   }
 

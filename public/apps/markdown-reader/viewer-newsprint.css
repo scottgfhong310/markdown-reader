@@ -107,16 +107,12 @@
   text-decoration: underline;
 }
 
-/* ===== 引言（斜體、左線） ===== */
+/* ===== 引言（正體、左線）=====
+ * 〔owner 2026-09-21〕原為斜體，改正體：CJK 沒有真斜體，瀏覽器只會把字形合成傾斜，
+ * 引文多是經文與漢字，斜著排反而難讀。 */
 .markdown-body blockquote {
   color: var(--np-quote-fg);
   border-left: .25em solid var(--np-quote-bd);
-  font-style: italic;
-}
-
-.markdown-body blockquote code,
-.markdown-body blockquote pre {
-  font-style: normal;
 }
 
 /* ===== 清單：巢狀換成 alpha / roman（newsprint 慣例） ===== */
