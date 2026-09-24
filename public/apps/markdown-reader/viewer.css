@@ -181,6 +181,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* page-break：強制分頁〔owner 2026-09-24〕。用法：<div class="page-break"></div>（前後各留一空行）。
+ * 取代作者手抄的 inline style（display:block; height:0; …; break-before:page; page-break-before:always）
+ * ——那串照樣有效，舊檔不必改。螢幕上畫一條淡虛線標出分頁位置（編排時看得出哪裡會分頁），列印時不印。 */
+.markdown-body .page-break {
+  display: block;
+  height: 0;
+  margin: 1.5em 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px dashed currentColor;
+  opacity: 0.3;
+  break-before: page;
+  page-break-before: always;
+}
+
+@media print {
+  .markdown-body .page-break {
+    margin: 0;
+    border-top: 0;
+  }
+}
+
 /* ===== 行內標記（由 markdown-library 移植）=====
  * .siddham：悉曇／梵字放大；.note：靠右小註（固定寬度、行距收緊、四周留白） */
 .markdown-body .siddham {

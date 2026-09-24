@@ -402,7 +402,10 @@
    *   那會連音譯詞表（2,176 個編號）、跨檔目錄、字彙整理一起加上目錄。標記寫在哪一行，目錄就在哪一行
    *  （典籍的開頭是 No.／# 題／標點凡例／撰號，「目錄該在哪」推不出來，由作者定）。
    *   沒有這個微調的地方，HTML 註解本來就不顯示——標記本身是無害的。
-   * · 收 ## 與 ###、不收 #（# 是文件題名，列進去只會多一個唯一的根）。標記前後的標題都收：目錄是整份文件的。
+   * · 收 ## 與 ###、不收 #（# 是文件題名，列進去只會多一個唯一的根）。
+   * · **只收標記之後的標題**〔owner 2026-09-24 改；原為「前後都收」〕：目錄列的是它後面的內容。
+   *   實例：目錄頁寫成 `## 卽身成佛義`／<!-- toc -->／分頁／正文 時，前後都收會把目錄頁自己的題名列進目錄，
+   *   而且多出來的那一個 ## 會讓底下全部 ### 縮排。標記之後一個 ##／### 都沒有 → 標記原樣留著。
    * · 段落編號＝**標題之後第一個**「行首的」編號（沿用 十住心論目錄.md 的口徑）：
    *   父標題（其下直接是子標題、自己沒有段落）因此沿用第一個子節的編號，不會空著。
    *   只認行首——段落編號在語料裡一律是段首；行中的 [T…] 是引用別處，不是這一段的位置。
@@ -415,7 +418,7 @@
    *   markdown 的 **粗體**／`碼`／[文字](網址) 轉成 HTML——<nav> 是 HTML 區塊，裡面的 markdown 不會被解析。
    * · 自己追蹤 ```／~~~ 圍欄、不用 withCodeMasked：遮罩會把標題裡的 `碼` 換成佔位符，還原後在 HTML 區塊裡
    *   顯示成字面的反引號。圍欄內的 #／標記一律不算。
-   * · 冪等：標記被換掉之後就不存在了；沒有任何 ##／### 時標記原樣留著。第一期不做點擊跳轉。 */
+   * · 冪等：標記被換掉之後就不存在了。第一期不做點擊跳轉。 */
   function sutraToc(md) {
     var MARK = /^[ \t]*<!--[ \t]*toc[ \t]*-->[ \t]*$/i;
     var HEAD = /^ {0,3}(#{2,3})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
@@ -448,12 +451,15 @@
     var items = heads.map(function (h) {
       while (k < codes.length && codes[k].at < h.at) k++;
       var code = k < codes.length ? codes[k].code : null;
-      return '<div class="toc-item toc-h' + h.level + '"><span class="toc-text">' + h.text + '</span>' +
-        (code ? '<span class="toc-ref"><span class="toc-leader"></span><span class="toc-code">[' + code + ']</span></span>' : '') + '</div>';
+      return { at: h.at, html: '<div class="toc-item toc-h' + h.level + '"><span class="toc-text">' + h.text + '</span>' +
+        (code ? '<span class="toc-ref"><span class="toc-leader"></span><span class="toc-code">[' + code + ']</span></span>' : '') + '</div>' };
     });
-    // HTML 區塊（CommonMark type 6）在空行才結束：<nav> 內不得有空行，前後各要一個空行
-    var block = ['', '<nav class="sutra-toc">', '<div class="toc-title">目錄</div>'].concat(items, ['</nav>', '']).join('\n');
-    marks.forEach(function (i) { lines[i] = block; });
+    marks.forEach(function (m) {
+      var mine = items.filter(function (it) { return it.at > m; }).map(function (it) { return it.html; });
+      if (!mine.length) return;                                   // 標記之後沒有 ##／### → 標記原樣留著
+      // HTML 區塊（CommonMark type 6）在空行才結束：<nav> 內不得有空行，前後各要一個空行
+      lines[m] = ['', '<nav class="sutra-toc">', '<div class="toc-title">目錄</div>'].concat(mine, ['</nav>', '']).join('\n');
+    });
     return lines.join('\n');
   }
 
