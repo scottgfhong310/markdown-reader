@@ -122,6 +122,65 @@
   line-height: 1.15;
 }
 
+/* sutra-toc：典籍目錄（md-tweaks.js 的 sutraToc 把單獨一行 <!-- toc --> 換成它）。
+ * 一列＝標題 ＋ 點線引導 ＋ 段落編號。點線是 flex 撐開的空 span 的虛線底框——
+ * 不用文字的「.....」：CJK／比例字型下對不齊，換主題、換列印字級也會跑掉。
+ * align-items: last baseline ⇒ 空 span 的基線是它的底框，點線落在文字（折行時是最後一行）的基線上。
+ * flex-wrap: wrap ⇒ 窄螢幕上標題放不下時自己佔一整行，.toc-ref（點線＋編號，一組）換到下一行撐滿、編號仍靠右；
+ * 不換行的話編號（nowrap）與點線（min-width）會把標題擠成一行四個字（375px 實測）。
+ * ### 只在同一份目錄裡有 ## 時才縮排（只有 ### 的典籍不該整份往右推）。 */
+.markdown-body .sutra-toc {
+  margin: 1em 0 1.5em;
+}
+
+.markdown-body .sutra-toc .toc-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+}
+
+.markdown-body .sutra-toc .toc-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: last baseline;
+  gap: 0 0.4em;
+  margin: 0.3em 0;
+  break-inside: avoid;
+}
+
+.markdown-body .sutra-toc .toc-h2 {
+  font-weight: 600;
+}
+
+.markdown-body .sutra-toc:has(.toc-h2) .toc-h3 {
+  padding-left: 1.5em;
+}
+
+.markdown-body .sutra-toc .toc-text {
+  flex: 0 1 auto;
+}
+
+.markdown-body .sutra-toc .toc-ref {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: last baseline;
+  gap: 0.4em;
+}
+
+.markdown-body .sutra-toc .toc-leader {
+  flex: 1 1 2em;
+  min-width: 2em;
+  border-bottom: 1px dotted currentColor;
+  opacity: 0.45;
+}
+
+.markdown-body .sutra-toc .toc-code {
+  flex: none;
+  white-space: nowrap;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ===== 行內標記（由 markdown-library 移植）=====
  * .siddham：悉曇／梵字放大；.note：靠右小註（固定寬度、行距收緊、四周留白） */
 .markdown-body .siddham {

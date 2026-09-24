@@ -392,9 +392,76 @@
     });
   }
 
+  /* 微調 10：典籍目錄——單獨一行 <!-- toc --> 換成本檔 ##／### 標題的目錄〔owner 2026-09-24〕
+   *   <!-- toc -->   →   <nav class="sutra-toc">
+   *                       <div class="toc-title">目錄</div>
+   *                       <div class="toc-item toc-h3"><span class="toc-text">一、問答立義・二經一論證文</span><span class="toc-ref"><span class="toc-leader"></span><span class="toc-code">[T2428_.77.0381b20]</span></span></div>
+   *                       …
+   *                       </nav>
+   * · 觸發是**明示的**：只有作者寫了標記才產生。不以「檔內有段落編號」自動判斷——
+   *   那會連音譯詞表（2,176 個編號）、跨檔目錄、字彙整理一起加上目錄。標記寫在哪一行，目錄就在哪一行
+   *  （典籍的開頭是 No.／# 題／標點凡例／撰號，「目錄該在哪」推不出來，由作者定）。
+   *   沒有這個微調的地方，HTML 註解本來就不顯示——標記本身是無害的。
+   * · 收 ## 與 ###、不收 #（# 是文件題名，列進去只會多一個唯一的根）。標記前後的標題都收：目錄是整份文件的。
+   * · 段落編號＝**標題之後第一個**「行首的」編號（沿用 十住心論目錄.md 的口徑）：
+   *   父標題（其下直接是子標題、自己沒有段落）因此沿用第一個子節的編號，不會空著。
+   *   只認行首——段落編號在語料裡一律是段首；行中的 [T…] 是引用別處，不是這一段的位置。
+   *   兩種編號都認：SAT 頁欄行 [T2428_.77.0381b20] 與 CBETA 段號 [T0220-575-001]／[T1185A-001-002-03]。
+   *   標題之後再也沒有編號時，那一列只有標題、沒有點線。
+   * · 目錄**不是** markdown 標題（用 <nav>／<div>）：寫成 #### 目錄 的話，它自己會變成文件的一個標題，
+   *   下一個掃標題的工具會把它當內容。點線引導由 viewer.css 畫（文字的 ..... 在 CJK／比例字型下對不齊）。
+   *   點線＋編號包成一個 .toc-ref：窄螢幕上標題放不下時兩者要**一起**換到下一行（分開包的話點線留在上一行、編號單獨掉下去）。
+   * · 標題文字：標籤原樣保留（<span class="note"> 小註照樣是小註，且後面的微調會照常處理它）；
+   *   markdown 的 **粗體**／`碼`／[文字](網址) 轉成 HTML——<nav> 是 HTML 區塊，裡面的 markdown 不會被解析。
+   * · 自己追蹤 ```／~~~ 圍欄、不用 withCodeMasked：遮罩會把標題裡的 `碼` 換成佔位符，還原後在 HTML 區塊裡
+   *   顯示成字面的反引號。圍欄內的 #／標記一律不算。
+   * · 冪等：標記被換掉之後就不存在了；沒有任何 ##／### 時標記原樣留著。第一期不做點擊跳轉。 */
+  function sutraToc(md) {
+    var MARK = /^[ \t]*<!--[ \t]*toc[ \t]*-->[ \t]*$/i;
+    var HEAD = /^ {0,3}(#{2,3})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
+    var CODE = /^[ \t]*\[([A-Z]{1,2}\d{3,4}[A-Za-z_]?(?:\.\d{2}\.\d{4}[a-z]\d{2}|(?:-\d{2,4}){2,3}))\]/;
+    var FENCE = /^ {0,3}(`{3,}|~{3,})/;
+    function inline(s) {
+      return s
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .trim();
+    }
+    var src = String(md);
+    var lines = src.split('\n'), inFence = null, marks = [], heads = [], codes = [];
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].replace(/\r$/, ''), f = l.match(FENCE);
+      if (inFence) {
+        if (f && f[1].charAt(0) === inFence.charAt(0) && f[1].length >= inFence.length && !l.slice(f[0].length).trim()) inFence = null;
+        continue;
+      }
+      if (f) { inFence = f[1]; continue; }
+      if (MARK.test(l)) { marks.push(i); continue; }
+      var h = l.match(HEAD);
+      if (h && h[2].trim()) { heads.push({ at: i, level: h[1].length, text: inline(h[2]) }); continue; }
+      var c = l.match(CODE);
+      if (c) codes.push({ at: i, code: c[1] });
+    }
+    if (!marks.length || !heads.length) return src;
+    var k = 0;
+    var items = heads.map(function (h) {
+      while (k < codes.length && codes[k].at < h.at) k++;
+      var code = k < codes.length ? codes[k].code : null;
+      return '<div class="toc-item toc-h' + h.level + '"><span class="toc-text">' + h.text + '</span>' +
+        (code ? '<span class="toc-ref"><span class="toc-leader"></span><span class="toc-code">[' + code + ']</span></span>' : '') + '</div>';
+    });
+    // HTML 區塊（CommonMark type 6）在空行才結束：<nav> 內不得有空行，前後各要一個空行
+    var block = ['', '<nav class="sutra-toc">', '<div class="toc-title">目錄</div>'].concat(items, ['</nav>', '']).join('\n');
+    marks.forEach(function (i) { lines[i] = block; });
+    return lines.join('\n');
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
+  // sutraToc 放最前：它讀的是作者寫的原文標題，而它抄進目錄的小註／悉曇 span 要與正文一樣被後面的微調處理。
   var TWEAKS = [
+    sutraToc,
     inlineTagList,
     bareTagList,
     headerizeLabels,
