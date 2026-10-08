@@ -158,14 +158,16 @@
    * 連結（[文字](url) 不會整行只有一個中括號）都碰不到。不符就原樣留著，不吞內容。
    * C 猜得更兇（連括號這個線索都沒有），故設得更緊：前後都是空行（自成一段、只有一行）、
    * 含**白名單裡的數學巨集**（不是「任何 \字母」——那會把 C:\Users\tmp 當成公式）、
-   * 拿掉 \text{…} 等文字巨集的內容之後不剩中文（中文只准住在 \text 裡）、
+   * 拿掉 \text{…} 等文字巨集的內容之後**沒有中文句讀**（。，、；：？！——有就是一句話不是公式；
+   * 裸中文本身可以，ChatGPT 稿實見 \boxed{ Jerry\ 不應該和巨頭競爭「平台層」 }，由 ③ 包進 \text{}）、
    * 不像清單／標題／表格／引言、不含 $（已經是公式）、不含 HTML 標籤／markdown 連結／粗體／程式碼。
    * 轉完前後各有一行 $$，不再自成一段 ⇒ 冪等。
    * 轉換的同時修三個被吃掉／會誤判的東西（只在區塊內）：
    *   ① 行尾單一 \ → \\（換行；cases／bmatrix 各列靠它分行）
    *   ② 數字後的 % → \%（% 在 LaTeX 是註解字元，5% 會吃掉整行後半；只認緊跟數字者，
    *      不動可能是真註解的 %）
-   *   ③ 裸中文 → \text{…}（該行已有 \text{ 就不動，避免巢狀）
+   *   ③ 裸中文 → \text{…}（只包 \text{…} 等文字巨集**之外**的那幾段，避免巢狀；
+   *      2026-10-09 前是「該行已有 \text{ 就整行不動」，\text{營收} \times 毛利 的「毛利」會漏包）
    * 行內公式 \( … \) 亦轉成 $…$；但**不修**被吃掉的行內版——那已與一般括號無異（(P^5)），
    * 猜了會誤傷正文，需人工補 $。跳過程式碼（遮罩）。冪等（轉完不再有 [ / ] 可觸發）。 */
   function repairLatexMath(md) {
@@ -186,21 +188,23 @@
       l = l.replace(ODD_SPACE, ' ');                                     // ⓪ 怪空白 → 空白
       l = l.replace(/(?<!\\)\\[ \t]*$/, '\\\\');                         // ① 行尾單一 \
       l = l.replace(/(?<=\d)%/g, '\\%');                                 // ② 5% → 5\%
-      if (l.indexOf('\\text{') < 0) l = l.replace(CJK, function (m) { return '\\text{' + m + '}'; });
+      l = l.split(TEXT_ARG_SPLIT).map(function (seg, k) {                  // ③ 奇數段是既有的 \text{…}，不動
+        return k % 2 ? seg : seg.replace(CJK, function (m) { return '\\text{' + m + '}'; });
+      }).join('');
       return l;
     }
     // C 的白名單：會出現在「公式」裡、而不會出現在路徑或一般正文裡的巨集。
     // 後面不得緊跟字母（\to 不命中 \tools、\ge 不命中 \gets 以外的東西也一樣要整字）。
     var MATH_MACRO = /\\(text|textbf|mathrm|mathbf|mathit|operatorname|boxed|frac|dfrac|tfrac|sqrt|sum|prod|int|lim|log|ln|max|min|neq|ne|approx|equiv|sim|simeq|propto|leq|geq|le|ge|ll|gg|times|div|cdot|pm|mp|infty|partial|nabla|uparrow|downarrow|Uparrow|Downarrow|rightarrow|leftarrow|Rightarrow|Leftarrow|leftrightarrow|Leftrightarrow|longrightarrow|Longrightarrow|to|mapsto|implies|iff|quad|qquad|left|right|alpha|beta|gamma|delta|Delta|epsilon|theta|lambda|mu|pi|sigma|Sigma|tau|phi|omega|Omega|bar|hat|vec|overline|underline)(?![A-Za-z])/;
     var TEXT_ARG = /\\(text|textbf|mathrm|mathbf|mathit|operatorname)\{[^{}]*\}/g;
+    var TEXT_ARG_SPLIT = /(\\(?:text|textbf|mathrm|mathbf|mathit|operatorname)\{[^{}]*\})/;
     function isBareMathLine(l) {
       var t = l.trim();
       if (!t || /^ {4}|^\t/.test(l)) return false;                       // 空行／縮排程式碼
       if (/^([-*+>#|]|\d+[.)]\s)/.test(t)) return false;                 // 清單／引言／標題／表格
       if (/[$<]|\]\(|\*\*|\x00/.test(t.replace(/<\s*\d/g, ''))) return false;   // 已是公式／HTML／連結／粗體／遮罩的程式碼（x<0 不算 HTML）
       if (!MATH_MACRO.test(t)) return false;
-      CJK.lastIndex = 0;
-      return !CJK.test(t.replace(TEXT_ARG, ''));                         // 中文只准住在 \text{} 裡
+      return !/[。，、；：？！]/.test(t.replace(TEXT_ARG, ''));               // \text{} 外有中文句讀 → 是一句話
     }
     return withCodeMasked(md, function (s) {
       s = s.replace(/\\\(([^\n]+?)\\\)/g, function (m, inner) { return '$' + inner.trim() + '$'; });
