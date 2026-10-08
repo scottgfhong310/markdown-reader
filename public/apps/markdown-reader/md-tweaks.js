@@ -148,12 +148,19 @@
     });
   }
 
-  /* 微調 4：把 LaTeX 區塊公式修成 zero-md（KaTeX）吃得下的 $$…$$。兩種輸入：
+  /* 微調 4：把 LaTeX 區塊公式修成 zero-md（KaTeX）吃得下的 $$…$$。三種輸入：
    *   A) 正規 LaTeX 的 \[ … \]  →  $$ … $$（KaTeX 只認 $ 系列，方括號寫法原樣印出）
    *   B) ChatGPT 匯出時反斜線被吃掉、只剩單獨成行的 [ … ]  →  同上
+   *   C) ChatGPT 複製時連 [ ] 都不見、只剩**單獨成段的一行**裸公式〔2026-10-09〕
+   *      （\text{Product} + \text{Growth} + \boxed{\text{Moat}}、Users\uparrow \Rightarrow Value\uparrow）→ 同上
    * B 是「猜」，故層層設限：整行剛好只有 [ / ]、區塊內不得有空行、40 行以內，
    * 且內容要像數學（含 \巨集，或純 ASCII 且有 = ^ _ 其中之一）——一般段落／markdown
    * 連結（[文字](url) 不會整行只有一個中括號）都碰不到。不符就原樣留著，不吞內容。
+   * C 猜得更兇（連括號這個線索都沒有），故設得更緊：前後都是空行（自成一段、只有一行）、
+   * 含**白名單裡的數學巨集**（不是「任何 \字母」——那會把 C:\Users\tmp 當成公式）、
+   * 拿掉 \text{…} 等文字巨集的內容之後不剩中文（中文只准住在 \text 裡）、
+   * 不像清單／標題／表格／引言、不含 $（已經是公式）、不含 HTML 標籤／markdown 連結／粗體／程式碼。
+   * 轉完前後各有一行 $$，不再自成一段 ⇒ 冪等。
    * 轉換的同時修三個被吃掉／會誤判的東西（只在區塊內）：
    *   ① 行尾單一 \ → \\（換行；cases／bmatrix 各列靠它分行）
    *   ② 數字後的 % → \%（% 在 LaTeX 是註解字元，5% 會吃掉整行後半；只認緊跟數字者，
@@ -173,11 +180,27 @@
       // 純 ASCII ＋ 至少一個算式符號 ＋ 至少一個字母或數字（P(Bull)-P(Bear)、Signal=0.75-0.05 這種）
       return /^[\x20-\x7E\n]*$/.test(body) && /[=^_+\-*/|]/.test(body) && /[A-Za-z0-9]/.test(body);
     }
+    // ChatGPT 複製出來的公式，token 之間有時是 U+2028／U+2029／NBSP 而不是空白（實測 04 VC Readiness 那份）
+    var ODD_SPACE = new RegExp('[' + String.fromCharCode(0x2028, 0x2029, 0xA0) + ']', 'g');
     function fixLine(l) {
+      l = l.replace(ODD_SPACE, ' ');                                     // ⓪ 怪空白 → 空白
       l = l.replace(/(?<!\\)\\[ \t]*$/, '\\\\');                         // ① 行尾單一 \
       l = l.replace(/(?<=\d)%/g, '\\%');                                 // ② 5% → 5\%
       if (l.indexOf('\\text{') < 0) l = l.replace(CJK, function (m) { return '\\text{' + m + '}'; });
       return l;
+    }
+    // C 的白名單：會出現在「公式」裡、而不會出現在路徑或一般正文裡的巨集。
+    // 後面不得緊跟字母（\to 不命中 \tools、\ge 不命中 \gets 以外的東西也一樣要整字）。
+    var MATH_MACRO = /\\(text|textbf|mathrm|mathbf|mathit|operatorname|boxed|frac|dfrac|tfrac|sqrt|sum|prod|int|lim|log|ln|max|min|neq|ne|approx|equiv|sim|simeq|propto|leq|geq|le|ge|ll|gg|times|div|cdot|pm|mp|infty|partial|nabla|uparrow|downarrow|Uparrow|Downarrow|rightarrow|leftarrow|Rightarrow|Leftarrow|leftrightarrow|Leftrightarrow|longrightarrow|Longrightarrow|to|mapsto|implies|iff|quad|qquad|left|right|alpha|beta|gamma|delta|Delta|epsilon|theta|lambda|mu|pi|sigma|Sigma|tau|phi|omega|Omega|bar|hat|vec|overline|underline)(?![A-Za-z])/;
+    var TEXT_ARG = /\\(text|textbf|mathrm|mathbf|mathit|operatorname)\{[^{}]*\}/g;
+    function isBareMathLine(l) {
+      var t = l.trim();
+      if (!t || /^ {4}|^\t/.test(l)) return false;                       // 空行／縮排程式碼
+      if (/^([-*+>#|]|\d+[.)]\s)/.test(t)) return false;                 // 清單／引言／標題／表格
+      if (/[$<]|\]\(|\*\*|\x00/.test(t.replace(/<\s*\d/g, ''))) return false;   // 已是公式／HTML／連結／粗體／遮罩的程式碼（x<0 不算 HTML）
+      if (!MATH_MACRO.test(t)) return false;
+      CJK.lastIndex = 0;
+      return !CJK.test(t.replace(TEXT_ARG, ''));                         // 中文只准住在 \text{} 裡
     }
     return withCodeMasked(md, function (s) {
       s = s.replace(/\\\(([^\n]+?)\\\)/g, function (m, inner) { return '$' + inner.trim() + '$'; });
@@ -199,7 +222,13 @@
         if (buf.length > 40) { out.push(lines[open]); out = out.concat(buf); buf = null; }   // 沒收尾 → 放棄
       }
       if (buf !== null) { out.push(lines[open]); out = out.concat(buf); }  // 檔尾未收尾：原樣吐回
-      return out.join('\n');
+      // C：自成一段的單行裸公式（A／B 轉出來的 $$ 區塊前後緊貼 $$，不會再命中）
+      var L = out.join('\n').split('\n');
+      for (var j = 0; j < L.length; j++) {
+        var prevBlank = j === 0 || !L[j - 1].trim(), nextBlank = j === L.length - 1 || !L[j + 1].trim();
+        if (prevBlank && nextBlank && isBareMathLine(L[j])) L[j] = '$$\n' + fixLine(L[j].trim()) + '\n$$';
+      }
+      return L.join('\n');
     });
   }
 
