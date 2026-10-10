@@ -328,8 +328,8 @@
   border-radius: 1em;          /* 單行時＝半高 ⇒ 膠囊；名稱太長折成兩行時退為圓角矩形 */
   background: var(--source-ref-bg, rgba(127, 127, 127, 0.18));
   color: inherit;
-  font-size: 0.85em;
-  line-height: 1.3;          /* 整顆高約 1.4em（父層）< 內文行高 1.7 ⇒ 不撐高所在的那一行 */
+  font-size: 0.6em;
+  line-height: 1.3;          /* 整顆高約 1em（父層）< 內文行高 1.7 ⇒ 不撐高所在的那一行 */
   text-decoration: none;
   vertical-align: middle;
   overflow-wrap: anywhere;     /* 長檔名（底線相連、沒有斷行點）不撐破版面 */
