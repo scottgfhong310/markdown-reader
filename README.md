@@ -12,7 +12,7 @@ A drag-and-drop single-page web app to **read and print Markdown**. It renders w
 - ✨ **Formatting toggle** — optionally apply CJK / Buddhist-text formatting (`MdFormater`) or show the raw file
 - 🗂️ File-list sidebar, download original, clear page, empty folder
 - 📰 **Reading style & print** — GitHub ↔ Newsprint reading skin, print font-scale, and a per-page-break **settings panel** (keep tables/lists together, page-break before H1, allow block/row breaks)
-- 📐 **Content conventions** — HTML classes usable in the `.md`: `.siddham` (glyph + romanization), `.glyph` (gaiji SVG), `.note`, `.right-table-wrap`, `.no-print`, `.nowrap`
+- 📐 **Content conventions** — HTML classes usable in the `.md`: `.siddham` (glyph + romanization), `.glyph` (gaiji SVG), `.note`, `.right-table-wrap`, `.no-print`, `.nowrap`, `.source-ref` (source-reference pill)
 
 > Third-party front-end libraries (zero-md, Materialize, jQuery, Lodash, github-markdown-css, highlight.js) load from CDN — no bundling or build step.
 

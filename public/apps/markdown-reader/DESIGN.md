@@ -139,6 +139,7 @@ side tool `auto_fix_high` toggle。以動態 `import('/lib/adp-col/mdFormater.js
 - `.note`：行內小註（小字）。
 - `.no-print` / `.screen-only`：螢幕顯示、列印隱藏。
 - `.nowrap`：群組不斷行（把音譯詞＋缺字包起來，避免行尾被拆）。
+- `.source-ref`：來源參考〔2026-10-10〕——行內膠囊（`::before` 便條圖示＋來源名稱），標示內容出自哪一份文件；`<span>` 或 `<a href>` 皆可。底色半透明中性灰、字色 `inherit`，圖示是 mask（不依賴 Material Icons 字型）；`vertical-align: middle`（inline-flex 的基線會取自沒有文字的圖示）。列印時底色被去底規則拿掉，改以邊框界定。圖示色／底色可由 `--source-ref-icon`／`--source-ref-bg` 覆寫。
 
 ### 5.13 渲染韌性
 zero-md 以 MutationObserver 觀察 markdown slot；設完 `textContent` 後**讓出一個 macrotask** 再 `render()`，否則會讀到舊內容。`render()` 冷啟動時 promise 偶爾不 resolve（內部等外部 CDN 樣式 `<link>` 的 load）；控制器以 **timeout race 重試**，直到某次 render 回報 `body:true`（不能只看 `.markdown-body` 非空——切檔時舊內容仍在會誤判成功）。

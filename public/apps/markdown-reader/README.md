@@ -70,6 +70,7 @@
 | `<span class="note">…</span>` | 行內小註 |
 | `<div class="right-table-wrap"><table>…</table></div>` | 序號（左大字）＋說明（右對齊）無框表 |
 | `<span class="nowrap">摩訶<span class="glyph" …></span>尼</span>` | 群組不斷行（音譯詞＋缺字不被拆到下一行） |
+| `<span class="source-ref">T2428_即身成佛義_分段標點</span>` | **來源參考**：行內膠囊（便條圖示＋來源名稱），標示內容出自哪一份文件；要可點時寫成 `<a class="source-ref" href="…">`。底色半透明中性灰、隨主題自適應；列印時改以細邊框界定 |
 
 ---
 

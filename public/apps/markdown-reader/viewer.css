@@ -301,6 +301,50 @@
   margin: 0.25em;
 }
 
+/* 來源參考〔owner 2026-10-10〕：行內的一顆膠囊——左側便條圖示＋來源名稱，
+ * 標示「這段內容出自哪一份文件」。
+ * 用法：<span class="source-ref">T2428_即身成佛義_分段標點</span>
+ *       要可點時寫成 <a class="source-ref" href="…">…</a>，外觀相同。
+ *
+ * 底色用半透明中性灰、字色 inherit ⇒ light / dark × github / newsprint 都不必另寫一份。
+ * 圖示是 ::before 的 mask（同 .glyph 的作法），不依賴 Material Icons 字型——
+ * 那支字型是主文件載的，獨立版與 InProgress 之外的環境不保證有。
+ * 圖示色、底色可由 --source-ref-icon／--source-ref-bg 覆寫。
+ *
+ * ⚠️ vertical-align 用 middle 不用 baseline：inline-flex 的基線取自第一個 flex item，
+ * 而那是沒有文字的 ::before ⇒ 基線會落在圖示下緣，整顆膠囊比同行文字高出一截。
+ * ⚠️ 邊框在螢幕上是透明的、只在列印時上色：列印段的「所有子元素去底」會把膠囊的底色
+ * 拿掉（Chrome 預設也不印背景），而邊框一定會印——同 pre 那條的作法。先佔 1px 是為了
+ * 螢幕與紙上的盒子尺寸一致。
+ * 尺寸一律 em：跟著內文字級、列印放大與 config 換字型走。 */
+.markdown-body .source-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.15em 0.85em 0.15em 0.6em;
+  border: 1px solid transparent;
+  border-radius: 1em;          /* 單行時＝半高 ⇒ 膠囊；名稱太長折成兩行時退為圓角矩形 */
+  background: var(--source-ref-bg, rgba(127, 127, 127, 0.18));
+  color: inherit;
+  font-size: 0.85em;
+  line-height: 1.3;          /* 整顆高約 1.4em（父層）< 內文行高 1.7 ⇒ 不撐高所在的那一行 */
+  text-decoration: none;
+  vertical-align: middle;
+  overflow-wrap: anywhere;     /* 長檔名（底線相連、沒有斷行點）不撐破版面 */
+}
+
+.markdown-body .source-ref::before {
+  content: "";
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  background-color: var(--source-ref-icon, #2f81f7);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8.5z'/%3E%3Cpath d='M14.5 20v-3.5a2 2 0 0 1 2-2H20'/%3E%3Cpath d='M8 9h8M8 13h4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8.5z'/%3E%3Cpath d='M14.5 20v-3.5a2 2 0 0 1 2-2H20'/%3E%3Cpath d='M8 9h8M8 13h4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 /* ===== 程式碼區塊複製鈕（由 markdown-reader.js 在 shadow DOM 內，把每個 <pre> 包進 .code-wrap 後加上） =====
  * 包一層 .code-wrap 來定位，按鈕才不會被 <pre> 的 overflow-x 卷走；顏色用 currentColor / 中性灰，
  * 不依賴主題變數，light/dark 都自適應。hover 才現身，觸控裝置一律顯示。 */
@@ -406,6 +450,14 @@
   /* 例外：缺字 .glyph 以 background-color + mask 成形，去底會讓整字消失 → 還原為文字色（列印＝黑） */
   .markdown-body .glyph {
     background-color: currentColor !important;
+  }
+
+  /* 來源參考：底色被上面的去底規則拿掉了，改以邊框界定膠囊（邊框一定會印）。
+   * 圖示是 ::before，不在「所有子元素」之內，底色（＝圖示色）原樣保留。
+   * 寫成 <a> 時不要底線——下面 .markdown-body a 那條會替所有連結加上。 */
+  .markdown-body .source-ref {
+    border-color: #8c959f;
+    text-decoration: none !important;
   }
 
   /* 互動元素（複製鈕）列印時隱藏 */
