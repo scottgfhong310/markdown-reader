@@ -25,7 +25,7 @@ I18n.register('ja', {
   'tool.download': '現在の Markdown をダウンロード',
   'tool.copyCode': 'コードをコピー',
   'toast.copied': 'コピーしました',
-  'toast.copyFail': 'コピー失敗',
+  'toast.copyFail': 'コピーに失敗しました',
   'tool.clearPage': '表示をクリア（ファイルは保持）',
   'tool.clear': '/upload/markdown-reader を空にする',
   'tool.config': '印刷設定',
