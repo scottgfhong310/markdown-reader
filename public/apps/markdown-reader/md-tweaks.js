@@ -150,6 +150,8 @@
 
   /* 微調 4：把 LaTeX 區塊公式修成 zero-md（KaTeX）吃得下的 $$…$$。三種輸入：
    *   A) 正規 LaTeX 的 \[ … \]  →  $$ … $$（KaTeX 只認 $ 系列，方括號寫法原樣印出）
+   *      A' 寫在同一行的 \[ … \]，含連寫的 \[ a \]\[ b \]（ChatGPT 稿實見，2026-10-18）→ 每段各一個 $$ 區塊；
+   *         只認整行就只有這些，任一段不像公式就整行不動
    *   B) ChatGPT 匯出時反斜線被吃掉、只剩單獨成行的 [ … ]  →  同上
    *   C) ChatGPT 複製時連 [ ] 都不見、只剩**單獨成段的一行**裸公式〔2026-10-09〕
    *      （\text{Product} + \text{Growth} + \boxed{\text{Moat}}、Users\uparrow \Rightarrow Value\uparrow）→ 同上
@@ -206,6 +208,13 @@
       if (!MATH_MACRO.test(t)) return false;
       return !/[。，、；：？！]/.test(t.replace(TEXT_ARG, ''));               // \text{} 外有中文句讀 → 是一句話
     }
+    // A'：\[ … \] 寫在同一行（可連寫好幾個：\[ a \]\[ b \]，LaTeX 裡就是好幾個獨立的 display）。
+    // 只認「整行就只有這些」——行中的 \[ 在 markdown 是跳脫的中括號（\[1\]），不碰。
+    var ONE_LINE = /^(?:\\\[(?:(?!\\\]).)+?\\\][ \t]*)+$/;
+    var GROUP = /\\\[((?:(?!\\\]).)+?)\\\]/g;
+    // 沒有算式符號的文字公式（\[ Probability \]、\[ Time\ Validity \]）：looksLikeMath 不收，
+    // 但「\[ 與 \] 內側各留一個空白＋純 ASCII＋有字母」是 ChatGPT 的寫法、不是跳脫的中括號（\[1\]）
+    var PADDED_TEXT = /^[ \t][\x20-\x7E]*[A-Za-z][\x20-\x7E]*[ \t]$/;
     return withCodeMasked(md, function (s) {
       s = s.replace(/\\\(([^\n]+?)\\\)/g, function (m, inner) { return '$' + inner.trim() + '$'; });
       var lines = s.split('\n'), out = [], buf = null, open = -1;
@@ -213,6 +222,14 @@
         var t = lines[i].trim();
         if (buf === null) {
           if (t === '[' || t === '\\[') { buf = []; open = i; }
+          else if (ONE_LINE.test(t)) {                                    // A'：整行只有一或多個 \[ … \]
+            var groups = [], g;
+            GROUP.lastIndex = 0;
+            while ((g = GROUP.exec(t))) groups.push(g[1]);
+            if (groups.every(function (x) { return looksLikeMath([x.trim()]) || PADDED_TEXT.test(x); })) {
+              groups.forEach(function (x) { out.push('$$', fixLine(x.trim()), '$$'); });
+            } else out.push(lines[i]);                                    // 有一段不像公式 → 整行原樣（\[1\] 之類的跳脫）
+          }
           else out.push(lines[i]);
           continue;
         }
