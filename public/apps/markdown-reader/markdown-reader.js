@@ -510,9 +510,38 @@
   var ICON_DONE = '<svg class="ci ci-done" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">' +
     '<path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
 
+  /* 複製：先試 clipboard API，不存在或被拒絕才退回 execCommand（DESIGN_GUIDELINES「複製鈕的 clipboard 退路」）。
+     ⚠️ 非 HTTPS／非 localhost（例如 http://192.168.0.x:3001）navigator.clipboard 是 undefined——
+     直接呼叫 writeText 會丟 TypeError，畫面上什麼都不會發生（沒有 toast、也沒有複製）。
+     暫用的 textarea 設 readonly（iOS 才不會彈鍵盤），並掛在焦點所在的 modal 裡
+     （Materialize 的 modal 會把跑到它外面的焦點搶回去，掛在 body 上就選不住）。 */
+  function execCommandCopy(text) {
+    var a = document.activeElement;
+    var host = (a && a.closest && a.closest('.modal')) || document.body;
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.opacity = '0';
+    host.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    host.removeChild(ta);
+    return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+  }
+  function writeClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () { return execCommandCopy(text); });
+    }
+    return execCommandCopy(text);
+  }
+
   function addCopyButtons() {
     var sr = viewer.shadowRoot;
-    if (!sr || !navigator.clipboard) return;   // 無 shadow / 非安全環境（無 clipboard）就不加
+    if (!sr) return;   // 無 shadow 就不加（非安全環境沒有 navigator.clipboard，由 writeClipboard 退回 execCommand）
     sr.querySelectorAll('.markdown-body pre').forEach(function (pre) {
       var parent = pre.parentNode;
       if (parent && parent.classList && parent.classList.contains('code-wrap')) return;  // 已處理
@@ -529,7 +558,7 @@
       btn.title = I18n.t('tool.copyCode');
       btn.innerHTML = ICON_COPY + ICON_DONE;
       btn.addEventListener('click', function () {
-        navigator.clipboard.writeText(code.textContent).then(function () {
+        writeClipboard(code.textContent).then(function () {
           btn.classList.add('copied');
           M.toast({ html: I18n.t('toast.copied'), classes: 'teal' });
           setTimeout(function () { btn.classList.remove('copied'); }, 1200);
