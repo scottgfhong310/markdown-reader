@@ -195,6 +195,19 @@
       }).join('');
       return l;
     }
+    // A 的第二條路：\[ 與 \] 都各自單獨成行（反斜線兩邊都在，不是 B 那種猜的）、內容是中文
+    //（\[ 虛空 : 大覺 = 水泡 : 大海 \]、\[ 能所未立之圓明覺性 \]，ChatGPT 稿實見，2026-10-23）
+    // ——looksLikeMath 要巨集或純 ASCII，中文公式兩者都不是，原樣留下的話 \[ 印成 [、
+    // 單獨一行的 = 把上一行變成 setext 標題。不要求算式符號（單獨一個詞也是作者要的置中顯示），
+    // 但 \text{} 外不得有中文句讀（有就是一段話被方括號包起來，不是公式）。
+    function looksLikeCjkMath(lines) {
+      if (!lines.length || lines.length > 40) return false;
+      if (lines.some(function (l) { return !l.trim(); })) return false;
+      if (lines.some(function (l) { return /^[ \t]*([-*+>#|]\s|\d+\.\s)/.test(l); })) return false;
+      var body = lines.join('\n').replace(TEXT_ARG, '');
+      if (/[$<]|\]\(|\*\*|\x00/.test(body.replace(/<\s*\d/g, ''))) return false;   // 已是公式／HTML／連結／粗體／程式碼
+      return !/[。，、；：？！]/.test(body);
+    }
     // C 的白名單：會出現在「公式」裡、而不會出現在路徑或一般正文裡的巨集。
     // 後面不得緊跟字母（\to 不命中 \tools、\ge 不命中 \gets 以外的東西也一樣要整字）。
     var MATH_MACRO = /\\(text|textbf|mathrm|mathbf|mathit|operatorname|boxed|frac|dfrac|tfrac|sqrt|sum|prod|int|lim|log|ln|max|min|neq|ne|approx|equiv|sim|simeq|propto|leq|geq|le|ge|ll|gg|times|div|cdot|pm|mp|infty|partial|nabla|uparrow|downarrow|Uparrow|Downarrow|rightarrow|leftarrow|Rightarrow|Leftarrow|leftrightarrow|Leftrightarrow|longrightarrow|Longrightarrow|to|mapsto|implies|iff|quad|qquad|left|right|alpha|beta|gamma|delta|Delta|epsilon|theta|lambda|mu|pi|sigma|Sigma|tau|phi|omega|Omega|bar|hat|vec|overline|underline)(?![A-Za-z])/;
@@ -217,11 +230,11 @@
     var PADDED_TEXT = /^[ \t][\x20-\x7E]*[A-Za-z][\x20-\x7E]*[ \t]$/;
     return withCodeMasked(md, function (s) {
       s = s.replace(/\\\(([^\n]+?)\\\)/g, function (m, inner) { return '$' + inner.trim() + '$'; });
-      var lines = s.split('\n'), out = [], buf = null, open = -1;
+      var lines = s.split('\n'), out = [], buf = null, open = -1, explicit = false;
       for (var i = 0; i < lines.length; i++) {
         var t = lines[i].trim();
         if (buf === null) {
-          if (t === '[' || t === '\\[') { buf = []; open = i; }
+          if (t === '[' || t === '\\[') { buf = []; open = i; explicit = t === '\\['; }
           else if (ONE_LINE.test(t)) {                                    // A'：整行只有一或多個 \[ … \]
             var groups = [], g;
             GROUP.lastIndex = 0;
@@ -234,7 +247,7 @@
           continue;
         }
         if (t === ']' || t === '\\]') {
-          if (looksLikeMath(buf)) out.push('$$', buf.map(fixLine).join('\n'), '$$');
+          if (looksLikeMath(buf) || (explicit && t === '\\]' && looksLikeCjkMath(buf))) out.push('$$', buf.map(fixLine).join('\n'), '$$');
           else out.push(lines[open], buf.join('\n'), lines[i]);           // 不像公式 → 原樣還原
           buf = null;
           continue;
