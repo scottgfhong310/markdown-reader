@@ -526,6 +526,23 @@
     return lines.join('\n');
   }
 
+  /* 微調：ChatGPT 的引用指令 :chatgpt-content-reference{index="2"} 不畫〔2026-10-23〕。
+   * 從 ChatGPT App 複製出來的回答帶著它——那是 ChatGPT 畫「來源標籤」用的，index 指向一份
+   * 沒有跟著複製出來的來源清單，留在畫面上只是一串懸空的字（下載仍是原檔）。
+   * 它常黏在 \] 的後面（\] :chatgpt-content-reference{index="2"}）：那一行不再是單獨的 \]，
+   * repairLatexMath 認不出區塊公式的收尾，一路吞到下一個 \]、中間有空行就整段放棄——
+   * 所以本條排在 repairLatexMath 前面。也黏在表格列的最後一格後面（| 了別境 | 前六識 | :chatgpt-…）。
+   * 自成一行的連換行一起拿掉（只留一個空行會把段落切成兩段）；其餘連同前面的空白拿掉。
+   * 只認這一個指令名：看過的只有它，別的指令可能帶著內容、不該跟著消失。跳過程式碼。 */
+  function stripChatgptRefs(md) {
+    var REF = ':chatgpt-content-reference\\{[^}\\n]*\\}';
+    return withCodeMasked(md, function (s) {
+      return s
+        .replace(new RegExp('^[ \\t]*(?:' + REF + '[ \\t]*)+\\n', 'gm'), '')
+        .replace(new RegExp('[ \\t]*' + REF, 'g'), '');
+    });
+  }
+
   // 依序套用的微調清單（之後要新增就往這裡加一個函式）
   // repairLatexMath 放最後：它產出的 $$ 區塊不再被其他微調（如 spaceBareTilde 的 ~）加工。
   // sutraToc 放最前：它讀的是作者寫的原文標題，而它抄進目錄的小註／悉曇 span 要與正文一樣被後面的微調處理。
@@ -539,6 +556,7 @@
     noteMaxWidth,
     siddhamSyllables,
     noPrintLegend,
+    stripChatgptRefs,
     repairLatexMath
   ];
 
