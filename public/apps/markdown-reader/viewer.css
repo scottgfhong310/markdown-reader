@@ -22,6 +22,19 @@
   overflow-x: auto;
 }
 
+/* 標成純文字（```text／plaintext／txt／plain）與沒寫語言的 code fence 自動換行〔owner 2026-10-24〕：
+ * 裡面裝的多半是散文（prompt、指令、說明），橫向捲動會讓一整段話擠成一行。只有標了語言的程式碼
+ * 照舊捲動；短行的樹狀圖／表格不受影響（pre-wrap 只折超過欄寬的行）。沒寫語言時 highlight.js 只給
+ * class="hljs"，沒有 language-*。與 markdown-library 的 viewer.css 同一條規則。
+ * 換行要設在內層 <code>：highlight.js 的 .hljs 自帶 display:block＋overflow-x:auto，且 code 有自己的
+ * white-space:pre（同 @media print 那一段的註解）。overflow-wrap:anywhere 讓沒有斷點的長網址也折得斷。 */
+.markdown-body pre:has(> code:is(.language-text, .language-plaintext, .language-txt, .language-plain, :not([class*="language-"]))),
+.markdown-body pre > code:is(.language-text, .language-plaintext, .language-txt, .language-plain, :not([class*="language-"])) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: visible;
+}
+
 .markdown-body :not(pre)>code {
   padding: 0.15em 0.4em;
   border-radius: 4px;
