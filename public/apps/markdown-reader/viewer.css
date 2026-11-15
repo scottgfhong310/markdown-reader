@@ -358,6 +358,35 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8.5z'/%3E%3Cpath d='M14.5 20v-3.5a2 2 0 0 1 2-2H20'/%3E%3Cpath d='M8 9h8M8 13h4'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
+/* ===== 行尾連結 → 膠囊〔owner 2026-11-15〕 =====
+ * 「…之佛。[Authority](https://…)」：跟在文字後面、在行尾的連結（＝出處）由控制器的
+ * addCiteLinks() 加 class md-cite（判斷在 lib 的 citeLinks()）；自成一段／一行的連結沒有這個 class、照舊。
+ * 作法同 .source-ref：底色用半透明中性灰、字色沿用連結色 ⇒ light / dark × github / newsprint 都不必另寫。
+ * ⚠️ inline-block 不加 overflow:hidden——加了之後它的基線變成下邊緣，整顆膠囊會比同行文字高出一截；
+ *    名稱太長就在膠囊裡折行（border-radius 1em ⇒ 單行是膠囊、兩行退為圓角矩形），不撐破版面。
+ * ⚠️ 高約 1.05em（父層）< 內文行高 ⇒ 不撐高所在的那一行。尺寸一律 em。
+ * markdown-library／markdown-reader／local-reader 三支的 viewer.css 都有這一組、逐字相同（螢幕＋列印各一段）。 */
+.markdown-body a.md-cite {
+  display: inline-block;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 0 0.1em 0 0.3em;
+  padding: 0.1em 0.75em;
+  border: 1px solid transparent;
+  border-radius: 1em;
+  background: var(--md-cite-bg, rgba(127, 127, 127, 0.16));
+  font-size: 0.8em;
+  line-height: 1.3;
+  text-decoration: none;
+  vertical-align: baseline;
+  overflow-wrap: anywhere;
+}
+
+.markdown-body a.md-cite:hover {
+  background: var(--md-cite-bg-hover, rgba(127, 127, 127, 0.28));
+  text-decoration: none;
+}
+
 /* ===== 程式碼區塊複製鈕（由 markdown-reader.js 在 shadow DOM 內，把每個 <pre> 包進 .code-wrap 後加上） =====
  * 包一層 .code-wrap 來定位，按鈕才不會被 <pre> 的 overflow-x 卷走；顏色用 currentColor / 中性灰，
  * 不依賴主題變數，light/dark 都自適應。hover 才現身，觸控裝置一律顯示。 */
@@ -518,6 +547,12 @@
 
   .markdown-body a[href]::after {
     content: "" !important;
+  }
+
+  /* 行尾連結的膠囊：底色不印 ⇒ 改印邊框（同 .source-ref），不加底線 */
+  .markdown-body a.md-cite {
+    border-color: #999 !important;
+    text-decoration: none !important;
   }
 
   /* 標題不落頁尾：與下文同頁 */

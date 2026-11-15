@@ -147,6 +147,72 @@
     return i > 0 ? b.slice(0, i) : b;
   }
 
+  // ⚠️ 以下「行尾連結」整段是 markdown-library 的 markdown-library-lib.js 同一段的**逐字複製件**（markdown-library 的 scripts/test-cite-links.js 逐位元組比對）。
+  /* ===================================================================
+   * 行尾連結 → 膠囊〔owner 2026-11-15〕
+   *   「…之佛。[Authority](https://…)」：連結是**那一行最後的東西、前面還有文字** ⇒ 它是出處，
+   *   畫成約 0.8em 的膠囊（樣式在各 app 的 CSS，class 是 md-cite）。
+   *   連結自成一段／一行（前面沒有文字，例如「- [標題](…)」的清單）⇒ 照舊是一般連結。
+   *   句中的連結（「根據[CNBC](…)，…」——後面還有字）不算。
+   *   - 「一行」以 <br> 與區塊子元素切（chat-notebook 的 marked 開 breaks:true，原文換行就是 <br>；
+   *     markdown-library 沒開，同一段裡的原文換行畫出來本來就接在一起，不算行尾）。
+   *   - 行尾連續幾個連結（以空白或「、，,；;」隔開）全部算。
+   *   - 外面包一層 `(…)`／`（…）` 也算（ChatGPT 的另一種寫法：「… ([網站](…))」）；括號留著。
+   * 純函式、不碰 DOM：控制器給一個區塊的子節點與分類函式——
+   *   kindOf(node) → 'text'（要 textOf 讀字）｜'link'｜'break'（<br>、區塊子元素）｜'skip'（註解）｜'el'（其他行內元素：算「有內容」）
+   * 回傳要畫成膠囊的那些 link 節點（依原順序）。
+   * ⚠️ 權威版在 markdown-library 的 markdown-library-lib.js；chat-notebook／markdown-reader／local-reader 的 lib
+   *    那一段是逐字複製件（markdown-library 的 scripts/test-cite-links.js 與 chat-notebook 的 verify ⑳ 逐位元組比對）。
+   *    改這一段要四支一起改。
+   * =================================================================== */
+  var CITE_CLOSE_RE = /^\s*[)）]\s*$/;
+  var CITE_OPEN_RE = /[(（]\s*$/;
+  var CITE_SEP_RE = /^[\s、，,；;]*$/;
+  function citeLinks(nodes, kindOf, textOf) {
+    var out = [], line = [];
+    function blank(it) { return it.k === 'text' && !/\S/.test(textOf(it.n)); }
+    function flush() {
+      var i = line.length - 1, paren = false, links = [], head, j;
+      while (i >= 0 && blank(line[i])) i--;
+      if (i >= 0 && line[i].k === 'text' && CITE_CLOSE_RE.test(textOf(line[i].n))) {
+        paren = true;
+        i--;
+        while (i >= 0 && blank(line[i])) i--;
+      }
+      while (i >= 0 && line[i].k === 'link') {
+        links.unshift(line[i].n);
+        i--;
+        // 連結與連結之間只准空白或分隔符號；分隔符號之前不是連結的話，它屬於前面的句子
+        j = i;
+        while (j >= 0 && line[j].k === 'text' && CITE_SEP_RE.test(textOf(line[j].n))) j--;
+        if (j >= 0 && line[j].k === 'link') i = j;
+        else while (i >= 0 && blank(line[i])) i--;
+      }
+      if (links.length) {
+        if (paren) {
+          head = i >= 0 && line[i].k === 'text' ? textOf(line[i].n).replace(/\s+$/, '') : '';
+          if (!CITE_OPEN_RE.test(head)) links = [];                      // 收尾的括號沒有對應的開括號：不是包起來的出處
+          else if (/\S/.test(head.replace(CITE_OPEN_RE, ''))) i = -2;    // 開括號前面同一段字裡就有內容
+          else i--;
+        }
+        var content = i === -2;
+        for (j = 0; !content && j <= i; j++) {
+          content = line[j].k === 'el' || (line[j].k === 'text' && /\S/.test(textOf(line[j].n)));
+        }
+        if (content) out.push.apply(out, links);
+      }
+      line = [];
+    }
+    for (var n = 0; n < nodes.length; n++) {
+      var k = kindOf(nodes[n]);
+      if (k === 'break') flush();
+      else if (k !== 'skip') line.push({ n: nodes[n], k: k });
+    }
+    flush();
+    return out;
+  }
+  // ⚠️ 行尾連結那一段到這裡為止。
+
   var MarkdownReaderLib = {
 
     FOLDER: FOLDER,
@@ -259,7 +325,10 @@
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-    }
+    },
+
+    // 行尾連結 → 膠囊（markdown-library 那一段的逐字複製件）
+    citeLinks: citeLinks
   };
 
   window.MarkdownReaderLib = MarkdownReaderLib;

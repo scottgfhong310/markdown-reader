@@ -477,6 +477,28 @@
       setFonts();
       setPrintScale();
       addCopyButtons();
+      addCiteLinks();
+    });
+  }
+
+  /* ---------- 行尾連結 → 膠囊（shadow DOM）〔owner 2026-11-15〕 ----------
+   * 「…之佛。[Authority](https://…)」：跟在文字後面、在行尾的連結加 class md-cite（樣式在 viewer.css）；
+   * 自成一段／一行的連結照舊。判斷在 lib 的 citeLinks()（markdown-library 那一段的逐字複製件），這裡只分類節點。
+   * 帶 class 的連結（.source-ref）不碰。 */
+  var CITE_BLOCK_RE = /^(P|DIV|UL|OL|LI|PRE|TABLE|BLOCKQUOTE|H[1-6]|HR|DL|DT|DD|FIGURE|DETAILS|SECTION|NAV)$/;
+  function citeKind(n) {
+    if (n.nodeType === 3) return 'text';
+    if (n.nodeType !== 1) return 'skip';
+    if (n.nodeName === 'BR' || CITE_BLOCK_RE.test(n.nodeName) || n.classList.contains('katex-display')) return 'break';
+    if (n.nodeName === 'A' && n.hasAttribute('href') && !n.className && !n.querySelector('img, svg, video, picture')) return 'link';
+    return 'el';
+  }
+  function citeText(n) { return n.textContent; }
+  function addCiteLinks() {
+    var sr = viewer.shadowRoot;
+    if (!sr) return;
+    sr.querySelectorAll('.markdown-body p, .markdown-body li, .markdown-body td, .markdown-body th, .markdown-body dt, .markdown-body dd').forEach(function (box) {
+      L.citeLinks(box.childNodes, citeKind, citeText).forEach(function (a) { a.classList.add('md-cite'); });
     });
   }
 
