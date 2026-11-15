@@ -102,10 +102,15 @@
   /* 微調 2：把「前後皆無空白的單一 ~」補成 ` ~ `（前後各一個空白）。
    *   Option 1~Option 7   →   Option 1 ~ Option 7
    * 否則成對的單一 ~ 會被 GFM 當刪除線分隔符（~text~）。跳過程式碼；不動雙波浪 ~~刪除線~~
-   *（單 ~ 緊鄰另一個 ~ 時不處理）。 */
+   *（單 ~ 緊鄰另一個 ~ 時不處理）。
+   * ⚠️ **網址裡的 ~ 不動**〔2026-11-15 owner 回報〕：`[www.cyut.edu.tw](https://www.cyut.edu.tw/~fmlee/…)`
+   *    補了空白之後網址裡有空白，`[…](…)` 就不再是連結、整串畫成文字（行尾連結因此也成不了膠囊）。
+   *    ⇒ 連結目的地（`](` 之後到空白或 `)` 為止）、裸網址（http(s)／ftp）與 `www.` 開頭的整段原樣保留。
+   *    同一個正則先吃到網址就整段跳過，所以網址裡的 ~ 輪不到後面那個分支。 */
+  var TILDE_RE = /(\]\(\s*<?[^\s)>]*|(?:https?|ftp):\/\/[^\s<>)\]]*|\bwww\.[^\s<>)\]]*)|(?<=[^\s~])~(?=[^\s~])/g;
   function spaceBareTilde(md) {
     return withCodeMasked(md, function (s) {
-      return s.replace(/(?<=[^\s~])~(?=[^\s~])/g, ' ~ ');
+      return s.replace(TILDE_RE, function (m, url) { return url ? m : ' ~ '; });
     });
   }
 
