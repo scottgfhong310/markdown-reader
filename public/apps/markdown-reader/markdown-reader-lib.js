@@ -158,6 +158,8 @@
    *     markdown-library 沒開，同一段裡的原文換行畫出來本來就接在一起，不算行尾）。
    *   - 行尾連續幾個連結（以空白或「、，,；;」隔開）全部算。
    *   - 外面包一層 `(…)`／`（…）` 也算（ChatGPT 的另一種寫法：「… ([網站](…))」）；括號留著。
+   *   - **連結文字只是一個編號（`1`、`[1]`，1～3 位數）⇒ 不論在哪裡都是膠囊**〔owner 2026-11-20〕：那是出處編號，
+   *     句中、自成一段都一樣（見下面的 citeRefs()）。
    * 純函式、不碰 DOM：控制器給一個區塊的子節點與分類函式——
    *   kindOf(node) → 'text'（要 textOf 讀字）｜'link'｜'break'（<br>、區塊子元素）｜'skip'（註解）｜'el'（其他行內元素：算「有內容」）
    * 回傳要畫成膠囊的那些 link 節點（依原順序）。
@@ -168,6 +170,7 @@
   var CITE_CLOSE_RE = /^\s*[)）]\s*$/;
   var CITE_OPEN_RE = /[(（]\s*$/;
   var CITE_SEP_RE = /^[\s、，,；;]*$/;
+  var CITE_NUM_RE = /^\s*\[?\d{1,3}\]?\s*$/;
   function citeLinks(nodes, kindOf, textOf) {
     var out = [], line = [];
     function blank(it) { return it.k === 'text' && !/\S/.test(textOf(it.n)); }
@@ -203,28 +206,44 @@
       }
       line = [];
     }
+    var nums = [];
     for (var n = 0; n < nodes.length; n++) {
       var k = kindOf(nodes[n]);
       if (k === 'break') flush();
       else if (k !== 'skip') line.push({ n: nodes[n], k: k });
+      if (k === 'link' && CITE_NUM_RE.test(textOf(nodes[n]))) nums.push(nodes[n]);
     }
     flush();
-    return out;
+    if (!nums.length) return out;
+    var all = [];                                                       // 依原順序、不重複
+    for (n = 0; n < nodes.length; n++) if (out.indexOf(nodes[n]) >= 0 || nums.indexOf(nodes[n]) >= 0) all.push(nodes[n]);
+    return all;
   }
 
-  /* 編號出處「[1] (https://…)」→ 連結「[1]」〔owner 2026-11-20〕
+  /* 編號出處「[1] (https://…)」→ 連結「1」（膠囊）〔owner 2026-11-20〕
    *   AI 回答複製出來的出處常是這個形狀（例：「…如來」。 [1] (https://cbetaonline…), [2] (https://…)」）：
    *   `]` 與 `(` 之間有空白 ⇒ markdown 不當成連結，GFM 再把網址自動連結 ⇒ 畫面上是整串網址。
-   *   ⇒ render 之前換成 `[\[1\]](https://…)`：畫面上是連結「[1]」，在行尾時照 citeLinks() 的規則畫成膠囊。
+   *   ⇒ render 之前換成 `[1](https://…)`；連結文字只是編號 ⇒ citeLinks() 一律畫成膠囊（不必在行尾），膠囊本身就是記號、不留括號。
+   *   - 連續幾個之間的「,」「，」「、」「;」「；」拿掉、只留一個空白（膠囊並排）〔owner 2026-11-20〕；
+   *     已經是連結的 `[1](…), [2](…)` 也一樣（同一串裡兩種寫法混著也算）。串尾後面的標點不動。
+   *   - ChatGPT 舊的寫法 `[[1](…)]`（連結外面再包一層字面的中括號）一併換成 `[1](…)`——否則膠囊兩邊各掛一個「[」「]」。
    *   - 只認**數字**標籤（1～3 位）與 http(s) 網址（不含空白與括號）；`[文字] (url)` 可能真的是一句話，不碰。
-   *   - 前面緊貼 `]`／`!`／`\`／字母數字的不碰（參照式連結、圖片、跳脫）。
+   *   - 串頭前面緊貼 `]`／`!`／`\`／字母數字的不碰（參照式連結、圖片、跳脫）。
    *   - 程式碼（``` ／ ~~~ 區塊與 `…`）不碰。
-   *   純字串、不改原文（下載與存檔仍是原文）。冪等：換完 `]` 後面緊接 `(`，不再命中。 */
-  var CITE_REF_RE = /(^|[^\]!\\0-9A-Za-z])\[(\d{1,3})\][ \t]+\((https?:\/\/[^\s()<>]+)\)/g;
+   *   純字串、不改原文（下載與存檔仍是原文）。冪等。 */
+  var CITE_URL = '(https?:\\/\\/[^\\s()<>]+)';
+  var CITE_ITEM = '(?:\\[\\[(\\d{1,3})\\]\\(' + CITE_URL + '\\)\\]|\\[(\\d{1,3})\\][ \\t]*\\(' + CITE_URL + '\\))';
+  var CITE_RUN_RE = new RegExp('(^|[^\\]!\\\\0-9A-Za-z])(' + CITE_ITEM + '(?:(?:[ \\t]*[,，、;；][ \\t]*|[ \\t]+)' + CITE_ITEM + ')*)', 'g');
+  var CITE_ITEM_RE = new RegExp(CITE_ITEM, 'g');
   var CITE_CODE_RE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/;
   function citeRefs(md) {
     return String(md == null ? '' : md).split(CITE_CODE_RE).map(function (seg, k) {
-      return k % 2 ? seg : seg.replace(CITE_REF_RE, function (m, pre, n, url) { return pre + '[\\[' + n + '\\]](' + url + ')'; });
+      return k % 2 ? seg : seg.replace(CITE_RUN_RE, function (m, pre, run) {
+        var items = [], it;
+        CITE_ITEM_RE.lastIndex = 0;
+        while ((it = CITE_ITEM_RE.exec(run))) items.push(it[1] ? '[' + it[1] + '](' + it[2] + ')' : '[' + it[3] + '](' + it[4] + ')');
+        return pre + items.join(' ');
+      });
     }).join('');
   }
   // ⚠️ 行尾連結那一段到這裡為止。
