@@ -211,6 +211,22 @@
     flush();
     return out;
   }
+
+  /* 編號出處「[1] (https://…)」→ 連結「[1]」〔owner 2026-11-20〕
+   *   AI 回答複製出來的出處常是這個形狀（例：「…如來」。 [1] (https://cbetaonline…), [2] (https://…)」）：
+   *   `]` 與 `(` 之間有空白 ⇒ markdown 不當成連結，GFM 再把網址自動連結 ⇒ 畫面上是整串網址。
+   *   ⇒ render 之前換成 `[\[1\]](https://…)`：畫面上是連結「[1]」，在行尾時照 citeLinks() 的規則畫成膠囊。
+   *   - 只認**數字**標籤（1～3 位）與 http(s) 網址（不含空白與括號）；`[文字] (url)` 可能真的是一句話，不碰。
+   *   - 前面緊貼 `]`／`!`／`\`／字母數字的不碰（參照式連結、圖片、跳脫）。
+   *   - 程式碼（``` ／ ~~~ 區塊與 `…`）不碰。
+   *   純字串、不改原文（下載與存檔仍是原文）。冪等：換完 `]` 後面緊接 `(`，不再命中。 */
+  var CITE_REF_RE = /(^|[^\]!\\0-9A-Za-z])\[(\d{1,3})\][ \t]+\((https?:\/\/[^\s()<>]+)\)/g;
+  var CITE_CODE_RE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/;
+  function citeRefs(md) {
+    return String(md == null ? '' : md).split(CITE_CODE_RE).map(function (seg, k) {
+      return k % 2 ? seg : seg.replace(CITE_REF_RE, function (m, pre, n, url) { return pre + '[\\[' + n + '\\]](' + url + ')'; });
+    }).join('');
+  }
   // ⚠️ 行尾連結那一段到這裡為止。
 
   var MarkdownReaderLib = {
@@ -328,7 +344,8 @@
     },
 
     // 行尾連結 → 膠囊（markdown-library 那一段的逐字複製件）
-    citeLinks: citeLinks
+    citeLinks: citeLinks,
+    citeRefs: citeRefs
   };
 
   window.MarkdownReaderLib = MarkdownReaderLib;

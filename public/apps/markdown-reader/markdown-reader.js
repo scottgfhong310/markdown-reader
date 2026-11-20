@@ -600,8 +600,9 @@
 
   // 依目前的格式化開關，重新渲染 state.text（原文）。
   // 先過 md-tweaks 的內容微調（永遠套用，只影響顯示；下載仍用 state.text 原檔）。
+  // 再把編號出處「[1] (https://…)」換成連結「[1]」（lib 的 citeRefs()，與行尾連結同一段）。
   function renderCurrentContent() {
-    var text = (window.MdTweaks ? MdTweaks.apply(state.text) : state.text);
+    var text = L.citeRefs(window.MdTweaks ? MdTweaks.apply(state.text) : state.text);
     if (state.format) {
       return formatterReady.then(function () { return renderText(formatMd(text)); });
     }
